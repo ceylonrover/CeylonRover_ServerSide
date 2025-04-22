@@ -5,11 +5,14 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Blog;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
 
 class BlogController extends Controller
 {
     public function store(Request $request)
     {
+        Log::info('BlogController@store method called', ['ip' => $request->ip()]);
+        
         try {
            
             $validated = $request->validate([
@@ -45,26 +48,36 @@ class BlogController extends Controller
             
             return response()->json(['message' => 'Blog created successfully', 'blog' => $blog], 201);
         } catch (\Exception $e) {
-            
+            Log::error('Error in BlogController@store', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
             return response()->json(['message' => 'An error occurred', 'error' => $e->getMessage()], 500);
         }
     }
 
     public function getAllPosts()
     {
+        Log::info('BlogController@getAllPosts method called');
+        
         try {
             
             $blogs = Blog::all();
 
             return response()->json(['message' => 'Blogs retrieved successfully', 'blogs' => $blogs], 200);
         } catch (\Exception $e) {
-            
+            Log::error('Error in BlogController@getAllPosts', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
             return response()->json(['message' => 'An error occurred', 'error' => $e->getMessage()], 500);
         }
     }
 
     public function update(Request $request, $id)
     {
+        Log::info('BlogController@update method called', ['id' => $id, 'ip' => $request->ip()]);
+        
         try {
             // Validate the request data
             $validated = $request->validate([
@@ -103,7 +116,12 @@ class BlogController extends Controller
             // Return a success response
             return response()->json(['message' => 'Blog updated successfully', 'blog' => $blog], 200);
         } catch (\Exception $e) {
-            // Handle any errors that occur
+            
+            Log::error('Error in BlogController@update', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'id' => $id
+            ]);
             return response()->json(['message' => 'An error occurred', 'error' => $e->getMessage()], 500);
         }
     }

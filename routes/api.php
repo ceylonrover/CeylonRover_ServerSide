@@ -16,12 +16,12 @@ use App\Http\Controllers\AuthController;
 */
 
 Route::post('/register', [AuthController::class, 'register']); // Register User
-Route::post('/login', [AuthController::class, 'login']); // Login User
+Route::post('/login', [AuthController::class, 'login'])->name("login"); // Login User
 Route::get('/blogs', [BlogController::class, 'getAllPosts']); // View Blogs (Public)
 
-Route::middleware('auth:sanctum')->group(function () {
+//Route::middleware('auth:sanctum')->group(function () {
     Route::post('/blogs', [BlogController::class, 'store']); // Create Blog
     Route::put('/blogs/{id}', [BlogController::class, 'update']); // Update Blog
     Route::get('/user', [AuthController::class, 'user']); // Get Logged-in User
     Route::post('/logout', [AuthController::class, 'logout']); // Logout User
-});
+//});

@@ -20,4 +20,9 @@ class Blog extends Model
         'location' => 'array',
         'gallery' => 'array',
     ];
+    
+    public function bookmarkedBy()
+    {
+        return $this->belongsToMany(User::class, 'blog_user_bookmarks')->withTimestamps();
+    }
 }

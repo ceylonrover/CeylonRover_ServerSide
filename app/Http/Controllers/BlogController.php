@@ -126,4 +126,48 @@ class BlogController extends Controller
         }
     }
 
+    public function filter(Request $request)
+    {
+        $query = \App\Models\Blog::query();
+
+        if ($request->has('title')) {
+            $query->where('title', 'like', '%' . $request->title . '%');
+        }
+
+        if ($request->has('author')) {
+            $query->where('author', 'like', '%' . $request->author . '%');
+        }
+
+        if ($request->has('category')) {
+            $query->whereJsonContains('categories', $request->category);
+        }
+
+        if ($request->has('status')) {
+            $query->where('status', $request->status);
+        }
+
+        return response()->json($query->latest()->get());
+    }
+
+    public function search(Request $request)
+    {
+        $search = $request->input('q');
+
+        $blogs = \App\Models\Blog::query()
+            ->when($search, function ($query, $search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('title', 'like', "%$search%")
+                    ->orWhere('description', 'like', "%$search%")
+                    ->orWhere('content', 'like', "%$search%")
+                    ->orWhere('author', 'like', "%$search%")
+                    ->orWhereJsonContains('categories', $search);
+                });
+            })
+            ->latest()
+            ->get();
+
+        return response()->json($blogs);
+    }
+
+
 }

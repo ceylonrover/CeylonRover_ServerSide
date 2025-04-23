@@ -17,4 +17,9 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
     ];
+
+    public function bookmarks()
+    {
+        return $this->belongsToMany(Blog::class, 'blog_user_bookmarks')->withTimestamps();
+    }
 }

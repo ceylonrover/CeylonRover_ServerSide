@@ -6,46 +6,74 @@ use Illuminate\Http\Request;
 use App\Models\Blog;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class BlogController extends Controller
 {
     public function store(Request $request)
     {
         Log::info('BlogController@store method called', ['ip' => $request->ip()]);
-        
+
         try {
-           
             $validated = $request->validate([
                 'title' => 'required|string|max:255',
                 'description' => 'required|string',
-                'additionalinfo' => 'nullable|string',
                 'content' => 'required|string',
-                'author' => 'required|string',
+                'user_id' => 'required|integer|exists:users,id',
                 'categories' => 'required|array|min:1',
                 'location' => 'nullable|array',
                 'image' => 'nullable|string',
                 'gallery' => 'nullable|array',
-                'review' => 'nullable|string', 
-                'status' => 'required|in:draft,published',
+                'operatingHours' => 'nullable|string',
+                'entryFee' => 'nullable|string',
+                'suitableFor' => 'nullable|array',
+                'specialty' => 'nullable|string',
+                'closedDates' => 'nullable|string',
+                'routeDetails' => 'nullable|string',
+                'safetyMeasures' => 'nullable|string',
+                'restrictions' => 'nullable|string',
+                'climate' => 'nullable|string',
+                'travelAdvice' => 'nullable|string',
+                'emergencyContacts' => 'nullable|string',
+                'assistance' => 'nullable|string',
+                'type' => 'nullable|string',
+                'views' => 'nullable|integer',
             ]);
-    
-            
+
+            // Save base64 image if present
+            $imagePath = null;
+            if (!empty($validated['image']) && str_starts_with($validated['image'], 'data:image')) {
+                $imagePath = $this->saveBase64Image($validated['image']);
+            }
+
             $blog = Blog::create([
                 'title' => $validated['title'],
                 'slug' => Str::slug($validated['title']),
                 'description' => $validated['description'],
-                'additionalinfo' => $validated['additionalinfo'] ?? '', // Provide a default value
                 'content' => $validated['content'],
-                'author' => $validated['author'],
+                'user_id' => $validated['user_id'],
+                //'author' => json_encode($validated['author'] ?? []),
                 'categories' => json_encode($validated['categories']),
                 'location' => json_encode($validated['location'] ?? []),
-                'image' => $validated['image'] ?? null,
+                'image' => $imagePath,
                 'gallery' => json_encode($validated['gallery'] ?? []),
-                'review' => $validated['review'] ?? '', // Provide a default value
-                'status' => $validated['status'],
+                'operatingHours' => $validated['operatingHours'] ?? '',
+                'entryFee' => $validated['entryFee'] ?? '',
+                'suitableFor' => json_encode($validated['suitableFor'] ?? []),
+                'specialty' => $validated['specialty'] ?? '',
+                'closedDates' => $validated['closedDates'] ?? '',
+                'routeDetails' => $validated['routeDetails'] ?? '',
+                'safetyMeasures' => $validated['safetyMeasures'] ?? '',
+                'restrictions' => $validated['restrictions'] ?? '',
+                'climate' => $validated['climate'] ?? '',
+                'travelAdvice' => $validated['travelAdvice'] ?? '',
+                'emergencyContacts' => $validated['emergencyContacts'] ?? '',
+                'assistance' => $validated['assistance'] ?? '',
+                'type' => $validated['type'] ?? 'General',
+                'views' => $validated['views'] ?? 0,
+                'status' => 'published',
             ]);
-    
-            
+
             return response()->json(['message' => 'Blog created successfully', 'blog' => $blog], 201);
         } catch (\Exception $e) {
             Log::error('Error in BlogController@store', [
@@ -56,13 +84,26 @@ class BlogController extends Controller
         }
     }
 
+    // Helper function
+    private function saveBase64Image($base64Image)
+    {
+        preg_match("/^data:image\/(.*?);base64,(.*)$/", $base64Image, $matches);
+        $imageType = $matches[1];
+        $imageData = base64_decode($matches[2]);
+
+        $filename = 'blogs/' . uniqid() . '.' . $imageType;
+        Storage::disk('public')->put($filename, $imageData);
+        return 'storage/' . $filename;
+    }
+
+
+    //Get All Posts
     public function getAllPosts()
     {
         Log::info('BlogController@getAllPosts method called');
         
         try {
-            
-            $blogs = Blog::all();
+            $blogs = Blog::where('status', 'approved')->get();
 
             return response()->json(['message' => 'Blogs retrieved successfully', 'blogs' => $blogs], 200);
         } catch (\Exception $e) {
@@ -72,6 +113,15 @@ class BlogController extends Controller
             ]);
             return response()->json(['message' => 'An error occurred', 'error' => $e->getMessage()], 500);
         }
+    }
+
+    public function getAll(Request $request)
+    {
+        if ($request->user() && $request->user()->is_admin) {
+            return Blog::all(); // All including pending and rejected
+        }
+
+        return Blog::where('status', 'approved')->get(); // Public users
     }
 
     public function update(Request $request, $id)
@@ -169,5 +219,31 @@ class BlogController extends Controller
         return response()->json($blogs);
     }
 
+    public function approve($id)
+    {
+        $blog = Blog::findOrFail($id);
+        $blog->status = 'approved';
+        $blog->save();
 
+        return response()->json(['message' => 'Blog approved']);
+    }
+
+    public function reject($id)
+    {
+        $blog = Blog::findOrFail($id);
+        $blog->status = 'rejected';
+        $blog->save();
+
+        return response()->json(['message' => 'Blog rejected']);
+    }
+
+    public function getPending(Request $request)
+    {
+        if ($request->user()->role !== 'admin') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $pendingBlogs = Blog::where('status', 'pending')->get();
+        return response()->json($pendingBlogs);
+    }
 }

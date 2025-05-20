@@ -31,4 +31,9 @@ use App\Http\Controllers\BookmarkController;
         Route::put('/user/profile', [AuthController::class, 'updateProfile']);//update User profile
         Route::post('/blogs/{id}/bookmark', [BookmarkController::class, 'toggle']);//add/remove Bookmarks
         Route::get('/bookmarks', [BookmarkController::class, 'index']);//get all bookmarks
+        Route::post('/blogs/{id}/approve', [BlogController::class, 'approve']); //Admin post approval
+        Route::post('/blogs/{id}/reject', [BlogController::class, 'reject']); //Admin Post Rejection
+        Route::get('/blogs/pending', [BlogController::class, 'getPending']); //Get pending posts for Admin
+        Route::get('/admin/users', [AdminUserController::class, 'index']);         // Get all users
+        Route::put('/admin/users/{id}/role', [AdminUserController::class, 'updateRole']); // Update user role
      });

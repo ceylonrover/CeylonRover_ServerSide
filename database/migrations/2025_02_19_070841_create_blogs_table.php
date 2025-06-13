@@ -12,21 +12,34 @@ return new class extends Migration
      * @return void
      */
     public function up()
-    {
-        Schema::create('blogs', function (Blueprint $table) {
+    {        Schema::create('blogs', function (Blueprint $table) {
             $table->id();
             $table->string('title');
             $table->string('slug')->unique();
             $table->text('description');
-            $table->text('additionalinfo');
+            $table->text('additionalInfo')->nullable();
             $table->longText('content');
-            $table->string('author');
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->json('categories');
             $table->json('location')->nullable();
             $table->string('image')->nullable();
             $table->json('gallery')->nullable();
-            $table->text('review');
-            $table->enum('status', ['draft', 'published'])->default('draft');
+            $table->text('review')->nullable();
+            $table->string('operatingHours')->nullable();
+            $table->string('entryFee')->nullable();
+            $table->json('suitableFor')->nullable();
+            $table->string('specialty')->nullable();
+            $table->string('closedDates')->nullable();
+            $table->string('routeDetails')->nullable();
+            $table->string('safetyMeasures')->nullable();
+            $table->string('restrictions')->nullable();
+            $table->string('climate')->nullable();
+            $table->string('travelAdvice')->nullable();
+            $table->string('emergencyContacts')->nullable();
+            $table->string('assistance')->nullable();
+            $table->string('type')->default('General');
+            $table->integer('views')->default(0);
+            $table->enum('status', ['draft', 'published', 'pending', 'approved', 'rejected'])->default('draft');
             $table->timestamps();
         });
     }
@@ -41,3 +54,4 @@ return new class extends Migration
         Schema::dropIfExists('blogs');
     }
 };
+ 

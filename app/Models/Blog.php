@@ -8,26 +8,45 @@ use Illuminate\Database\Eloquent\Model;
 
 class Blog extends Model
 {
-    use HasFactory;
-
-    protected $fillable = [
+    use HasFactory;    protected $fillable = [
         'title', 'slug', 'description', 'additionalinfo', 'content', 'user_id',
-        'categories', 'location', 'image', 'gallery', 'review', 'status',
-        'operating_hours', 'entry_fee', 'suitable_for', 'specialty',
-        'closed_dates', 'route_details', 'safety_measures', 'restrictions',
-        'climate', 'travel_advice', 'emergency_contacts', 'assistance',
+        'categories', 'location', 'image', 'gallery', 'review', 'status', 'is_active',
+        'operatingHours', 'entryFee', 'suitableFor', 'specialty',
+        'closedDates', 'routeDetails', 'safetyMeasures', 'restrictions',
+        'climate', 'travelAdvice', 'emergencyContacts', 'assistance',
         'type', 'views'
-    ];
-
-    protected $casts = [
+    ];protected $casts = [
         'categories' => 'array',
         'location' => 'array',
         'gallery' => 'array',
-        'suitable_for' => 'array',
+        'suitableFor' => 'array',
     ];
-    
-    public function bookmarkedBy()
+      public function bookmarkedBy()
     {
         return $this->belongsToMany(User::class, 'blog_user_bookmarks')->withTimestamps();
+    }
+    
+    /**
+     * Get all moderation records for this blog
+     */
+    public function moderations()
+    {
+        return $this->hasMany(BlogModeration::class);
+    }
+    
+    /**
+     * Get the latest moderation record for this blog
+     */
+    public function latestModeration()
+    {
+        return $this->hasOne(BlogModeration::class)->latest();
+    }
+    
+    /**
+     * Get the media files associated with this blog.
+     */
+    public function media()
+    {
+        return $this->hasMany(Media::class);
     }
 }

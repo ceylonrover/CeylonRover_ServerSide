@@ -57,7 +57,7 @@ class BlogController extends Controller
                 'location' => json_encode($validated['location'] ?? []),
                 'image' => $imagePath,
                 'gallery' => json_encode($validated['gallery'] ?? []),
-                'operatingHours' => $validated['operatingHours'] ?? '',
+                'operatingHours' => $validated['operatingHours'] ?? '', 
                 'entryFee' => $validated['entryFee'] ?? '',
                 'suitableFor' => json_encode($validated['suitableFor'] ?? []),
                 'specialty' => $validated['specialty'] ?? '',
@@ -95,8 +95,6 @@ class BlogController extends Controller
         Storage::disk('public')->put($filename, $imageData);
         return 'storage/' . $filename;
     }
-
-
     //Get All Posts
     public function getAllPosts()
     {
@@ -122,9 +120,7 @@ class BlogController extends Controller
         }
 
         return Blog::where('status', 'approved')->get(); // Public users
-    }
-
-    public function update(Request $request, $id)
+    }public function update(Request $request, $id)
     {
         Log::info('BlogController@update method called', ['id' => $id, 'ip' => $request->ip()]);
         
@@ -135,17 +131,38 @@ class BlogController extends Controller
                 'description' => 'sometimes|string',
                 'additionalinfo' => 'nullable|string',
                 'content' => 'sometimes|string',
-                'author' => 'sometimes|string',
+                'user_id' => 'sometimes|integer|exists:users,id',
                 'categories' => 'sometimes|array|min:1',
                 'location' => 'nullable|array',
                 'image' => 'nullable|string',
                 'gallery' => 'nullable|array',
                 'review' => 'nullable|string',
-                'status' => 'sometimes|in:draft,published',
+                'operatingHours' => 'nullable|string',
+                'entryFee' => 'nullable|string',
+                'suitableFor' => 'nullable|array',
+                'specialty' => 'nullable|string',
+                'closedDates' => 'nullable|string',
+                'routeDetails' => 'nullable|string',
+                'safetyMeasures' => 'nullable|string',
+                'restrictions' => 'nullable|string',
+                'climate' => 'nullable|string',
+                'travelAdvice' => 'nullable|string',
+                'emergencyContacts' => 'nullable|string',
+                'assistance' => 'nullable|string',
+                'type' => 'nullable|string',
+                'views' => 'nullable|integer',
+                'status' => 'sometimes|in:draft,published,pending,approved,rejected',
             ]);
 
             // Find the blog post by ID
             $blog = Blog::findOrFail($id);
+
+            // Save base64 image if present
+            $imagePath = null;
+            if (!empty($validated['image']) && str_starts_with($validated['image'], 'data:image')) {
+                $imagePath = $this->saveBase64Image($validated['image']);
+                $validated['image'] = $imagePath;
+            }
 
             // Update the blog post with the validated data
             $blog->update([
@@ -154,12 +171,26 @@ class BlogController extends Controller
                 'description' => $validated['description'] ?? $blog->description,
                 'additionalinfo' => $validated['additionalinfo'] ?? $blog->additionalinfo,
                 'content' => $validated['content'] ?? $blog->content,
-                'author' => $validated['author'] ?? $blog->author,
+                'user_id' => $validated['user_id'] ?? $blog->user_id,
                 'categories' => isset($validated['categories']) ? json_encode($validated['categories']) : $blog->categories,
                 'location' => isset($validated['location']) ? json_encode($validated['location']) : $blog->location,
                 'image' => $validated['image'] ?? $blog->image,
                 'gallery' => isset($validated['gallery']) ? json_encode($validated['gallery']) : $blog->gallery,
                 'review' => $validated['review'] ?? $blog->review,
+                'operatingHours' => $validated['operatingHours'] ?? $blog->operatingHours,
+                'entryFee' => $validated['entryFee'] ?? $blog->entryFee,
+                'suitableFor' => isset($validated['suitableFor']) ? json_encode($validated['suitableFor']) : $blog->suitableFor,
+                'specialty' => $validated['specialty'] ?? $blog->specialty,
+                'closedDates' => $validated['closedDates'] ?? $blog->closedDates,
+                'routeDetails' => $validated['routeDetails'] ?? $blog->routeDetails,
+                'safetyMeasures' => $validated['safetyMeasures'] ?? $blog->safetyMeasures,
+                'restrictions' => $validated['restrictions'] ?? $blog->restrictions,
+                'climate' => $validated['climate'] ?? $blog->climate,
+                'travelAdvice' => $validated['travelAdvice'] ?? $blog->travelAdvice,
+                'emergencyContacts' => $validated['emergencyContacts'] ?? $blog->emergencyContacts,
+                'assistance' => $validated['assistance'] ?? $blog->assistance,
+                'type' => $validated['type'] ?? $blog->type,
+                'views' => $validated['views'] ?? $blog->views,
                 'status' => $validated['status'] ?? $blog->status,
             ]);
 

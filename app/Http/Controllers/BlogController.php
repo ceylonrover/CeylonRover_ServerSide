@@ -40,24 +40,38 @@ class BlogController extends Controller
                 'views' => 'nullable|integer',
             ]);
 
-            // Save base64 image if present
-            $imagePath = null;
+            // Create folder name from title slug
+            $slug = Str::slug($validated['title']);
+            $folderPath = 'blogs/' . $slug;
+
+            // Save main image
+            $mainImagePath = null;
             if (!empty($validated['image']) && str_starts_with($validated['image'], 'data:image')) {
-                $imagePath = $this->saveBase64Image($validated['image']);
+                $mainImagePath = $this->saveBase64ImageToFolder($validated['image'], $folderPath, 'main');
             }
 
+            // Save gallery images
+            $galleryImagePaths = [];
+            if (!empty($validated['gallery']) && is_array($validated['gallery'])) {
+                foreach ($validated['gallery'] as $index => $base64Image) {
+                    if (str_starts_with($base64Image, 'data:image')) {
+                        $galleryImagePaths[] = $this->saveBase64ImageToFolder($base64Image, $folderPath, 'img' . ($index + 1));
+                    }
+                }
+            }
+
+            // Create blog
             $blog = Blog::create([
                 'title' => $validated['title'],
-                'slug' => Str::slug($validated['title']),
+                'slug' => $slug,
                 'description' => $validated['description'],
                 'content' => $validated['content'],
                 'user_id' => $validated['user_id'],
-                //'author' => json_encode($validated['author'] ?? []),
                 'categories' => json_encode($validated['categories']),
                 'location' => json_encode($validated['location'] ?? []),
-                'image' => $imagePath,
-                'gallery' => json_encode($validated['gallery'] ?? []),
-                'operatingHours' => $validated['operatingHours'] ?? '', 
+                'image' => $mainImagePath,
+                'gallery' => json_encode($galleryImagePaths),
+                'operatingHours' => $validated['operatingHours'] ?? '',
                 'entryFee' => $validated['entryFee'] ?? '',
                 'suitableFor' => json_encode($validated['suitableFor'] ?? []),
                 'specialty' => $validated['specialty'] ?? '',
@@ -71,7 +85,7 @@ class BlogController extends Controller
                 'assistance' => $validated['assistance'] ?? '',
                 'type' => $validated['type'] ?? 'General',
                 'views' => $validated['views'] ?? 0,
-                'status' => 'published',
+                'status' => 'pending', // default status
             ]);
 
             return response()->json(['message' => 'Blog created successfully', 'blog' => $blog], 201);
@@ -84,17 +98,18 @@ class BlogController extends Controller
         }
     }
 
-    // Helper function
-    private function saveBase64Image($base64Image)
+    private function saveBase64ImageToFolder($base64Image, $folder, $filenamePrefix)
     {
         preg_match("/^data:image\/(.*?);base64,(.*)$/", $base64Image, $matches);
-        $imageType = $matches[1];
+        $extension = $matches[1];
         $imageData = base64_decode($matches[2]);
 
-        $filename = 'blogs/' . uniqid() . '.' . $imageType;
+        $filename = $folder . '/' . $filenamePrefix . '.' . $extension;
         Storage::disk('public')->put($filename, $imageData);
+
         return 'storage/' . $filename;
     }
+
     //Get All Posts
     public function getAllPosts()
     {
@@ -120,22 +135,24 @@ class BlogController extends Controller
         }
 
         return Blog::where('status', 'approved')->get(); // Public users
-    }public function update(Request $request, $id)
+    }
+    
+    public function update(Request $request, $id)
     {
         Log::info('BlogController@update method called', ['id' => $id, 'ip' => $request->ip()]);
-        
+
         try {
             // Validate the request data
             $validated = $request->validate([
-                'title' => 'sometimes|string|max:255', 
+                'title' => 'sometimes|string|max:255',
                 'description' => 'sometimes|string',
                 'additionalinfo' => 'nullable|string',
                 'content' => 'sometimes|string',
                 'user_id' => 'sometimes|integer|exists:users,id',
                 'categories' => 'sometimes|array|min:1',
                 'location' => 'nullable|array',
-                'image' => 'nullable|string',
-                'gallery' => 'nullable|array',
+                'image' => 'nullable|file|image|max:2048',
+                'gallery.*' => 'nullable|file|image|max:2048',
                 'review' => 'nullable|string',
                 'operatingHours' => 'nullable|string',
                 'entryFee' => 'nullable|string',
@@ -154,50 +171,53 @@ class BlogController extends Controller
                 'status' => 'sometimes|in:draft,published,pending,approved,rejected',
             ]);
 
-            // Find the blog post by ID
+            // Validate the request data
             $blog = Blog::findOrFail($id);
 
-            // Save base64 image if present
-            $imagePath = null;
-            if (!empty($validated['image']) && str_starts_with($validated['image'], 'data:image')) {
-                $imagePath = $this->saveBase64Image($validated['image']);
-                $validated['image'] = $imagePath;
+            $slug = isset($validated['title']) ? Str::slug($validated['title']) : $blog->slug;
+            $folder = 'blogs/' . $slug;
+
+            // Main image upload
+            if ($request->hasFile('image')) {
+                $imageFile = $request->file('image');
+                $filename = 'main.' . $imageFile->getClientOriginalExtension();
+                $imagePath = $imageFile->storeAs($folder, $filename, 'public');
+                $validated['image'] = 'storage/' . $imagePath;
             }
 
-            // Update the blog post with the validated data
-            $blog->update([
-                'title' => $validated['title'] ?? $blog->title,
-                'slug' => isset($validated['title']) ? Str::slug($validated['title']) : $blog->slug,
-                'description' => $validated['description'] ?? $blog->description,
-                'additionalinfo' => $validated['additionalinfo'] ?? $blog->additionalinfo,
-                'content' => $validated['content'] ?? $blog->content,
-                'user_id' => $validated['user_id'] ?? $blog->user_id,
-                'categories' => isset($validated['categories']) ? json_encode($validated['categories']) : $blog->categories,
-                'location' => isset($validated['location']) ? json_encode($validated['location']) : $blog->location,
-                'image' => $validated['image'] ?? $blog->image,
-                'gallery' => isset($validated['gallery']) ? json_encode($validated['gallery']) : $blog->gallery,
-                'review' => $validated['review'] ?? $blog->review,
-                'operatingHours' => $validated['operatingHours'] ?? $blog->operatingHours,
-                'entryFee' => $validated['entryFee'] ?? $blog->entryFee,
-                'suitableFor' => isset($validated['suitableFor']) ? json_encode($validated['suitableFor']) : $blog->suitableFor,
-                'specialty' => $validated['specialty'] ?? $blog->specialty,
-                'closedDates' => $validated['closedDates'] ?? $blog->closedDates,
-                'routeDetails' => $validated['routeDetails'] ?? $blog->routeDetails,
-                'safetyMeasures' => $validated['safetyMeasures'] ?? $blog->safetyMeasures,
-                'restrictions' => $validated['restrictions'] ?? $blog->restrictions,
-                'climate' => $validated['climate'] ?? $blog->climate,
-                'travelAdvice' => $validated['travelAdvice'] ?? $blog->travelAdvice,
-                'emergencyContacts' => $validated['emergencyContacts'] ?? $blog->emergencyContacts,
-                'assistance' => $validated['assistance'] ?? $blog->assistance,
-                'type' => $validated['type'] ?? $blog->type,
-                'views' => $validated['views'] ?? $blog->views,
-                'status' => $validated['status'] ?? $blog->status,
-            ]);
+            // Gallery image upload
+            $galleryPaths = json_decode($blog->gallery, true) ?? [];
+            if ($request->hasFile('gallery')) {
+                foreach ($request->file('gallery') as $index => $galleryImage) {
+                    $filename = 'img' . (count($galleryPaths) + $index + 1) . '.' . $galleryImage->getClientOriginalExtension();
+                    $path = $galleryImage->storeAs($folder, $filename, 'public');
+                    $galleryPaths[] = 'storage/' . $path;
+                }
+                $validated['gallery'] = json_encode($galleryPaths);
+            }
 
-            // Return a success response
+            // Other JSON fields
+            if (isset($validated['categories'])) {
+                $validated['categories'] = json_encode($validated['categories']);
+            }
+            if (isset($validated['location'])) {
+                $validated['location'] = json_encode($validated['location']);
+            }
+            if (isset($validated['suitableFor'])) {
+                $validated['suitableFor'] = json_encode($validated['suitableFor']);
+            }
+
+            // Set slug
+            if (isset($validated['title'])) {
+                $validated['slug'] = $slug;
+            }
+
+            $blog->update($validated);
+
+            
             return response()->json(['message' => 'Blog updated successfully', 'blog' => $blog], 200);
         } catch (\Exception $e) {
-            
+
             Log::error('Error in BlogController@update', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
@@ -206,6 +226,7 @@ class BlogController extends Controller
             return response()->json(['message' => 'An error occurred', 'error' => $e->getMessage()], 500);
         }
     }
+
 
     public function filter(Request $request)
     {

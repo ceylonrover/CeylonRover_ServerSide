@@ -107,21 +107,45 @@ class TravsnapController extends Controller
                         $galleryPaths[] = $base64Image;
                     }
                 }
-            }
-
-            // Update the travsnap with gallery paths
+            }            // Update the travsnap with gallery paths
             $travsnap->update([
                 'gallery' => $galleryPaths
             ]);
-
+            
+            // Find superadmin to assign as moderator (be specific with the role)
+            $superAdmin = \App\Models\User::where('role', 'superAdmin')->first();
+            
+            // Log the superadmin details for debugging
+            if ($superAdmin) {
+                Log::info('SuperAdmin found for moderation assignment', [
+                    'superadmin_id' => $superAdmin->id,
+                    'superadmin_email' => $superAdmin->email,
+                    'travsnap_id' => $travsnap->id
+                ]);
+            } else {
+                Log::warning('No SuperAdmin found for moderation assignment', [
+                    'travsnap_id' => $travsnap->id
+                ]);
+            }
+            
             // Create initial moderation record
             $moderation = TravsnapModeration::create([
                 'travsnap_id' => $travsnap->id,
-                'moderator_id' => $validated['user_id'], // Set creator as initial moderator
+                'moderator_id' => $superAdmin ? $superAdmin->id : $validated['user_id'], // Set superadmin as moderator if available, otherwise fallback to creator
                 'status' => 'pending',
                 'moderator_notes' => null,
                 'is_active' => true,
             ]);
+            
+            // If there's a super admin in the system, also create a moderator assignment record
+            if ($superAdmin) {
+                \App\Models\ModeratorAssignment::create([
+                    'moderator_id' => $superAdmin->id,
+                    'content_id' => $travsnap->id,
+                    'content_type' => 'travsnap',
+                    'is_active' => true
+                ]);
+            }
 
             // Update travsnap with moderation_id
             $travsnap->update(['moderation_id' => $moderation->id]);
@@ -219,25 +243,38 @@ class TravsnapController extends Controller
             ]);
             return response()->json(['message' => 'An error occurred', 'error' => $e->getMessage()], 500);
         }
-    }
-
-    /**
+    }    /**
      * Get all pending travsnaps (for admin).
-     */
-    public function getPending()
+     */    public function getPending()
     {
         Log::info('TravsnapController@getPending method called');
         
         try {
-            // Check if user is admin (you may need to adjust this based on your auth logic)
-            if (!Auth::user() || !Auth::user()->is_admin) {
+            // Check if user is admin or super admin
+            if (!Auth::user() || !in_array(Auth::user()->role, ['admin', 'superAdmin'])) {
                 return response()->json(['message' => 'Unauthorized'], 403);
             }
 
-            $travsnaps = Travsnap::where('status', 'pending')
-                ->where('is_active', true)
-                ->with('user:id,name,email,profile_photo')
-                ->get();
+            // If super admin, get all pending travsnaps
+            if (Auth::user()->role === 'superAdmin') {
+                $travsnaps = Travsnap::where('status', 'pending')
+                    ->where('is_active', true)
+                    ->with('user:id,name,email,profile_photo')
+                    ->get();
+            } else {
+                // For regular admins, get only travsnaps assigned to them
+                $assignedTravsnapIds = \App\Models\ModeratorAssignment::where('moderator_id', Auth::id())
+                    ->where('content_type', 'travsnap')
+                    ->where('is_active', true)
+                    ->pluck('content_id')
+                    ->toArray();
+                    
+                $travsnaps = Travsnap::where('status', 'pending')
+                    ->where('is_active', true)
+                    ->whereIn('id', $assignedTravsnapIds)
+                    ->with('user:id,name,email,profile_photo')
+                    ->get();
+            }
 
             return response()->json([
                 'message' => 'Pending travsnaps retrieved successfully', 
@@ -254,25 +291,27 @@ class TravsnapController extends Controller
 
     /**
      * Approve a travsnap (admin only).
-     */
-    public function approve(Request $request, $id)
+     */    public function approve(Request $request, $id)
     {
         Log::info('TravsnapController@approve method called', ['id' => $id]);
         
         try {
-            // Check if user is admin (you may need to adjust this based on your auth logic)
-            if (!Auth::user() || !Auth::user()->is_admin) {
+            // Check if user is admin or super admin
+            if (!Auth::user() || !in_array(Auth::user()->role, ['admin', 'superAdmin'])) {
                 return response()->json(['message' => 'Unauthorized'], 403);
-            }
-
-            $travsnap = Travsnap::findOrFail($id);
+            }            $travsnap = Travsnap::findOrFail($id);
+            
+            // Get the superadmin for moderation assignment
+            $superAdmin = \App\Models\User::where('role', 'superAdmin')->first();
+            $moderatorId = $superAdmin ? $superAdmin->id : Auth::id();
             
             // Update travsnap status
             $travsnap->update(['status' => 'approved']);
-              // Create new moderation record
+            
+            // Create new moderation record
             $moderation = TravsnapModeration::create([
                 'travsnap_id' => $travsnap->id,
-                'moderator_id' => Auth::id(), // Current authenticated user as moderator
+                'moderator_id' => $moderatorId, // Use superadmin if available, otherwise current authenticated user
                 'status' => 'approved',
                 'moderator_notes' => $request->input('notes', 'Approved by admin'),
                 'published_at' => now(),
@@ -284,6 +323,12 @@ class TravsnapController extends Controller
                 TravsnapModeration::where('id', $travsnap->moderation_id)
                     ->update(['is_active' => false]);
             }
+            
+            // Deactivate moderator assignments for this travsnap
+            \App\Models\ModeratorAssignment::where('content_id', $travsnap->id)
+                ->where('content_type', 'travsnap')
+                ->where('is_active', true)
+                ->update(['is_active' => false]);
             
             // Update travsnap with new moderation_id
             $travsnap->update(['moderation_id' => $moderation->id]);
@@ -303,14 +348,13 @@ class TravsnapController extends Controller
 
     /**
      * Reject a travsnap (admin only).
-     */
-    public function reject(Request $request, $id)
+     */    public function reject(Request $request, $id)
     {
         Log::info('TravsnapController@reject method called', ['id' => $id]);
         
         try {
-            // Check if user is admin (you may need to adjust this based on your auth logic)
-            if (!Auth::user() || !Auth::user()->is_admin) {
+            // Check if user is admin or super admin
+            if (!Auth::user() || !in_array(Auth::user()->role, ['admin', 'superAdmin'])) {
                 return response()->json(['message' => 'Unauthorized'], 403);
             }
 
@@ -319,8 +363,7 @@ class TravsnapController extends Controller
             ]);
 
             $travsnap = Travsnap::findOrFail($id);
-            
-            // Update travsnap status
+              // Update travsnap status
             $travsnap->update(['status' => 'rejected']);
               // Create new moderation record
             $moderation = TravsnapModeration::create([
@@ -339,6 +382,11 @@ class TravsnapController extends Controller
                     ->update(['is_active' => false]);
             }
             
+            // Deactivate moderator assignments for this travsnap
+            \App\Models\ModeratorAssignment::where('content_id', $travsnap->id)
+                ->where('content_type', 'travsnap')
+                ->where('is_active', true)
+                ->update(['is_active' => false]);
             // Update travsnap with new moderation_id
             $travsnap->update(['moderation_id' => $moderation->id]);
 

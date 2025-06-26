@@ -25,8 +25,7 @@ class Blog extends Model
     {
         return $this->belongsToMany(User::class, 'blog_user_bookmarks')->withTimestamps();
     }
-    
-    /**
+      /**
      * Get all moderation records for this blog
      */
     public function moderations()
@@ -40,6 +39,14 @@ class Blog extends Model
     public function latestModeration()
     {
         return $this->hasOne(BlogModeration::class)->latest();
+    }
+    
+    /**
+     * Get the user who created this blog
+     */
+    public function user()
+    {
+        return $this->belongsTo(User::class);
     }
     
     /**

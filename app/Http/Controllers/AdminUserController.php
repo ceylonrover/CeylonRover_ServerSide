@@ -2,27 +2,17 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use Illuminate\Http\Request;
 
 class AdminUserController extends Controller
-{
-   // Show all users (only for admin)
+{   // Show all users (only for admin)
    public function index(Request $request)
    {
-       if ($request->user()->role !== 'admin') {
-           return response()->json(['message' => 'Unauthorized'], 403);
-       }
-
        return response()->json(User::all());
-   }
-
-   // Update user role (only for admin)
+   }   // Update user role (only for admin)
    public function updateRole(Request $request, $id)
    {
-       if ($request->user()->role !== 'admin') {
-           return response()->json(['message' => 'Unauthorized'], 403);
-       }
-
        $validated = $request->validate([
            'role' => 'required|in:user,admin',
        ]);

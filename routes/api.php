@@ -23,6 +23,12 @@ use App\Http\Controllers\TravsnapModerationController;
 */    Route::post('/register', [AuthController::class, 'register']); // Register User
     Route::post('/login', [AuthController::class, 'login'])->name("login"); // Login User
     Route::post('/admin/login', [AdminAuthController::class, 'login'])->name("admin.login"); // Admin Login
+    
+    // Email Verification Routes (public)
+    Route::post('/email/verify/send-otp', [App\Http\Controllers\EmailVerificationController::class, 'sendOTP']);
+    Route::post('/email/verify/verify-otp', [App\Http\Controllers\EmailVerificationController::class, 'verifyOTP']);
+    Route::post('/email/verify/resend-otp', [App\Http\Controllers\EmailVerificationController::class, 'resendOTP']);
+    
     Route::get('/blogs', [BlogController::class, 'getAllPosts']); // View Blogs (Public)
     Route::get('/blogs/{id}', [BlogController::class, 'show']); // View Single Blog (Public)
     Route::get('/travsnaps', [TravsnapController::class, 'getAllTravsnaps']); // View Travsnaps (Public)
@@ -32,11 +38,17 @@ use App\Http\Controllers\TravsnapModerationController;
      Route::middleware('auth:sanctum')->group(function () {
          Route::post('/blogs', [BlogController::class, 'store']); // Create Blog
         Route::put('/blogs/{id}', [BlogController::class, 'update']); // Update Blog
-        Route::get('/user', [AuthController::class, 'user']); // Get Logged-in User
+        Route::get('/user', [AuthController::class, 'user']); // Get Logged-in User        Route::get('/email/verify/status', [AuthController::class, 'checkEmailVerification']); // Check email verification status
+        Route::post('/email/verify', [AuthController::class, 'verifyEmail']); // Verify email with OTP (authenticated users)
         Route::post('/logout', [AuthController::class, 'logout']); // Logout User
         Route::get('/blogs/filter', [BlogController::class, 'filter']);//Filter by 
         Route::get('/blogs/search', [BlogController::class, 'search']);//Common Search
         Route::put('/user/profile', [AuthController::class, 'updateProfile']);//update User profile
+          // New profile endpoints
+        Route::get('/profile', [App\Http\Controllers\ProfileController::class, 'getProfile']); // Get user profile
+        Route::put('/profile', [App\Http\Controllers\ProfileController::class, 'updateProfile']); // Update user profile
+        Route::post('/profile/image', [App\Http\Controllers\ProfileController::class, 'uploadProfileImage']); // Upload profile image
+        
         Route::post('/blogs/{id}/bookmark', [BookmarkController::class, 'toggle']);//add/remove Bookmarks
         Route::get('/bookmarks', [BookmarkController::class, 'index']);//get all bookmarks 
          Route::post('/moderator/assign', [ModeratorAssignmentController::class, 'assign']);

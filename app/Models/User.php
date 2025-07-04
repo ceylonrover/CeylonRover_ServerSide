@@ -9,7 +9,7 @@ use Laravel\Sanctum\HasApiTokens;
 class User extends Authenticatable
 {
     use HasApiTokens, Notifiable;    protected $fillable = [
-        'name', 'email', 'phone', 'password', 'is_active', 'role', 'profile_image',
+        'name', 'email', 'phone', 'password', 'is_active', 'role', 'profile_image', 'email_verified_at',
     ];
 
     protected $hidden = [
@@ -68,10 +68,17 @@ class User extends Authenticatable
      * Check if the user is a super admin
      *
      * @return bool
-     */
-    public function isSuperAdmin()
+     */    public function isSuperAdmin()
     {
         \Log::info('admin role check', ['role' => $this->role]);
         return $this->role === 'superAdmin';
+    }
+
+    /**
+     * Get the user's profile details.
+     */
+    public function detail()
+    {
+        return $this->hasOne(UserDetail::class);
     }
 }

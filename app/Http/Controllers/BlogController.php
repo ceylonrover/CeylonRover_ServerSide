@@ -110,6 +110,16 @@ class BlogController extends Controller
                 ]);
             }
 
+            // Notify all admins
+            $adminUsers = \App\Models\User::where('role', 'admin')->get();
+
+            foreach ($adminUsers as $admin) {
+                Mail::send('emails.blog-notification-admin', ['blog' => $blog], function ($message) use ($admin, $blog) {
+                    $message->to($admin->email)
+                            ->subject("New Blog Post Submitted: {$blog->title}");
+                });
+            }
+
             return response()->json(['message' => 'Blog created successfully', 'blog' => $blog], 201);
         } catch (\Exception $e) {
             Log::error('Error in BlogController@store', [

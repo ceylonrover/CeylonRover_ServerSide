@@ -34,6 +34,7 @@ use App\Http\Controllers\TravsnapModerationController;
     Route::get('/travsnaps', [TravsnapController::class, 'getAllTravsnaps']); // View Travsnaps (Public)
     Route::get('/travsnaps/{id}', [TravsnapController::class, 'getById']); // View Single Travsnap (Public)
     Route::get('/travsnaps/featured', [TravsnapController::class, 'getFeatured']); // View Featured Travsnaps (Public)
+    Route::get('/blogs/filter', [BlogController::class, 'filter']); //Filter Blogs (Public)
 
      Route::middleware('auth:sanctum')->group(function () {
          Route::post('/blogs', [BlogController::class, 'store']); // Create Blog

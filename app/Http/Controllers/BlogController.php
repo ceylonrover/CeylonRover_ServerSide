@@ -7,6 +7,7 @@ use App\Models\Blog;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Mail;
 
 class BlogController extends Controller
 {
@@ -40,10 +41,20 @@ class BlogController extends Controller
                 'views' => 'nullable|integer',
             ]);
 
+            // Generate a unique slug
+            $baseSlug = Str::slug($validated['title']);
+            $slug = $baseSlug;
+            $counter = 1;
+            
+            // Check if the slug exists, if so, append a number
+            while (Blog::where('slug', $slug)->exists()) {
+                $slug = $baseSlug . '-' . $counter++;
+            }
+
             // Create blog first to get ID
             $blog = Blog::create([
                 'title' => $validated['title'],
-                'slug' => Str::slug($validated['title']),
+                'slug' => $slug, // Use the unique slug
                 'description' => $validated['description'],
                 'content' => $validated['content'],
                 'user_id' => $validated['user_id'],
@@ -98,8 +109,7 @@ class BlogController extends Controller
                 'status' => 'pending',
                 'moderator_notes' => null,
                 'is_active' => true,
-            ]);            
-            // If there's a super admin in the system, automatically assign them to moderate this blog
+            ]);              // If there's a super admin in the system, automatically assign them to moderate this blog
             $superAdmin = \App\Models\User::where('role', 'superAdmin')->first();
             if ($superAdmin) {
                 \App\Models\ModeratorAssignment::create([
@@ -108,14 +118,10 @@ class BlogController extends Controller
                     'content_type' => 'blog',
                     'is_active' => true
                 ]);
-            }
-
-            // Notify all admins
-            $adminUsers = \App\Models\User::where('role', 'admin')->get();
-
-            foreach ($adminUsers as $admin) {
-                Mail::send('emails.blog-notification-admin', ['blog' => $blog], function ($message) use ($admin, $blog) {
-                    $message->to($admin->email)
+                
+                // Notify only super admin
+                Mail::send('emails.blog-notification-admin', ['blog' => $blog], function ($message) use ($superAdmin, $blog) {
+                    $message->to($superAdmin->email)
                             ->subject("New Blog Post Submitted: {$blog->title}");
                 });
             }

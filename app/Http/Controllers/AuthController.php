@@ -81,11 +81,23 @@ class AuthController extends Controller
         $user = Auth::user();
         $token = $user->createToken('auth_token')->plainTextToken;
 
+        // Load user details to get profile image path
+        $userDetail = $user->detail;
+        $profileImagePath = null;
+        
+        if ($userDetail && $userDetail->profile_image_path) {
+            $profileImagePath = $userDetail->profile_image_path;
+        } elseif ($user->profile_image) {
+            // Fallback to user's profile_image if available
+            $profileImagePath = $user->profile_image;
+        }
+
         return response()->json([
             'message' => 'Login successful',
             'user' => $user,
             'token' => $token,
-        ]);
+            'profile_image_path' => $profileImagePath,
+        ], 200, [], JSON_UNESCAPED_SLASHES);
     }
 
     // 🔹 Get User Info

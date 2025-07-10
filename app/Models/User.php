@@ -81,4 +81,14 @@ class User extends Authenticatable
     {
         return $this->hasOne(UserDetail::class);
     }
+    //Likes and Bookmarks
+    public function likedBlogs()
+    {
+        return $this->belongsToMany(Blog::class, 'likes')->withTimestamps();
+    }
+
+    public function bookmarkedBlogs()
+    {
+        return $this->belongsToMany(Blog::class, 'bookmarks')->withTimestamps();
+    }
 }

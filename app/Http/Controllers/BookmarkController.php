@@ -11,23 +11,22 @@ class BookmarkController extends Controller
     public function toggle(Request $request, $blogId)
     {
         $user = $request->user();
-        $blog = Blog::findOrFail($blogId);
+        $bookmarked = $user->bookmarkedBlogs()->toggle($blogId);
 
-        if ($user->bookmarks()->where('blog_id', $blogId)->exists()) {
-            $user->bookmarks()->detach($blogId);
-            return response()->json(['message' => 'Bookmark removed']);
-        } else {
-            $user->bookmarks()->attach($blogId);
-            return response()->json(['message' => 'Bookmark added']);
-        }
+        $action = count($bookmarked['attached']) > 0 ? 'bookmarked' : 'unbookmarked';
+
+        return response()->json(['message' => "Blog {$action} successfully"]);
+    }
+    // 📚 Get all bookmarked blogs
+    public function getBookmarks($blogId)
+    {
+        $count = Blog::findOrFail($blogId)->bookmarkedBy()->count();
+        return response()->json(['bookmarks' => $count]);
     }
 
-    // 📚 Get all bookmarked blogs
-    public function index(Request $request)
+    public function userBookmarks(Request $request)
     {
-        $user = $request->user();
-        $bookmarks = $user->bookmarks()->latest()->get();
-
-        return response()->json($bookmarks);
+        $bookmarks = $request->user()->bookmarkedBlogs()->get();
+        return response()->json(['bookmarked_blogs' => $bookmarks]);
     }
 }

@@ -21,10 +21,7 @@ class Blog extends Model
         'gallery' => 'array',
         'suitableFor' => 'array',
     ];
-      public function bookmarkedBy()
-    {
-        return $this->belongsToMany(User::class, 'blog_user_bookmarks')->withTimestamps();
-    }
+      
       /**
      * Get all moderation records for this blog
      */
@@ -55,5 +52,16 @@ class Blog extends Model
     public function media()
     {
         return $this->hasMany(Media::class);
+    }
+
+    //Likes and Bookmarks
+    public function likedBy()
+    {
+        return $this->belongsToMany(User::class, 'likes')->withTimestamps();
+    }
+
+    public function bookmarkedBy()
+    {
+        return $this->belongsToMany(User::class, 'bookmarks')->withTimestamps();
     }
 }

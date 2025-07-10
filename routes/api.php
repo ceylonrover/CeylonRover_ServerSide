@@ -50,9 +50,15 @@ use App\Http\Controllers\TravsnapModerationController;
         Route::put('/profile', [App\Http\Controllers\ProfileController::class, 'updateProfile']); // Update user profile
         Route::post('/profile/image', [App\Http\Controllers\ProfileController::class, 'uploadProfileImage']); // Upload profile image
         
-        Route::post('/blogs/{id}/bookmark', [BookmarkController::class, 'toggle']);//add/remove Bookmarks
-        Route::get('/bookmarks', [BookmarkController::class, 'index']);//get all bookmarks 
-         Route::post('/moderator/assign', [ModeratorAssignmentController::class, 'assign']);
+        //Likes and Bookmarks
+        Route::post('/blogs/{id}/like', [LikeController::class, 'toggle']);
+        Route::get('/blogs/{id}/likes', [LikeController::class, 'getLikes']);
+
+        Route::post('/blogs/{id}/bookmark', [BookmarkController::class, 'toggle']);
+        Route::get('/blogs/{id}/bookmarks', [BookmarkController::class, 'getBookmarks']);
+        Route::get('/user/bookmarks', [BookmarkController::class, 'userBookmarks']);
+        
+        Route::post('/moderator/assign', [ModeratorAssignmentController::class, 'assign']);
         Route::get('/moderator/assignments/{moderatorId?}', [ModeratorAssignmentController::class, 'getModeratorAssignments']);        Route::get('/moderator/unassigned-content', [ModeratorAssignmentController::class, 'getUnassignedContent']);
         Route::get('/moderator/available', [ModeratorAssignmentController::class, 'getAvailableModerators']);
 

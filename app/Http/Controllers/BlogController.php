@@ -281,30 +281,110 @@ class BlogController extends Controller
             ]);
             return response()->json(['message' => 'An error occurred', 'error' => $e->getMessage()], 500);
         }
-    }
-
-
+    } 
+    
+    
     public function filter(Request $request)
     {
-        $query = \App\Models\Blog::query();
+        // Start with base query and immediately filter for approved blogs only
+        $query = \App\Models\Blog::query()->where('blogs.status', 'approved');
 
-        if ($request->has('title')) {
-            $query->where('title', 'like', '%' . $request->title . '%');
+        // Get filter parameters from request body
+        $title = $request->input('title');
+        $author = $request->input('author');
+        $categories = $request->input('categories');
+        $sortBy = $request->input('sort_by');
+        
+        // Log the filter parameters for debugging
+        \Illuminate\Support\Facades\Log::info('Blog filter parameters', [
+            'title' => $title,
+            'author' => $author,
+            'categories' => $categories,
+            'sort_by' => $sortBy,
+        ]);
+        
+        // Apply title filter
+        if ($title) {
+            $query->where('title', 'like', '%' . $title . '%');
         }
 
-        if ($request->has('author')) {
-            $query->where('author', 'like', '%' . $request->author . '%');
+        // Apply author filter
+        if ($author) {
+            $query->where('author', 'like', '%' . $author . '%');
+        }        // Apply categories filter (handle multiple categories)
+        if ($categories && is_array($categories)) {
+            $query->where(function($query) use ($categories) {
+                foreach ($categories as $category) {
+                    // Handle double-encoded JSON with escaped quotes (\\\\\")
+                    $query->orWhere('categories', 'LIKE', '%\\\\\"' . $category . '\\\\\"%');
+                }
+            });
         }
+            // Join with the blog_user_bookmarks table to count bookmarks (likes)
+        $query->withCount('bookmarkedBy as likes_count');
+          // Eager load the user relationship with specific fields and the user's details
+        $query->with(['user.detail']);
+        
+        // Handle sorting options
+        if ($sortBy) {
+            // If sort_by is an array, handle multiple sorting criteria
+            if (is_array($sortBy)) {
+                foreach ($sortBy as $sortOption) {
+                    $this->applySorting($query, $sortOption);
+                }
+            } else {
+                // Single sorting criterion
+                $this->applySorting($query, $sortBy);
+            }
+        } else {
+            // Default ordering
+            $query->latest();
+        }        // Get the filtered blogs
+        $blogs = $query->get();
+        
+        // Log the SQL query that was executed (for debugging)
+        \Illuminate\Support\Facades\Log::info('Blog filter SQL', [
+            'sql' => $query->toSql(),
+            'bindings' => $query->getBindings(),
+            'count' => $blogs->count()
+        ]);
+          // Transform the blogs to include user info and exclude latestModeration
+        $transformedBlogs = $blogs->map(function($blog) {
+            // Create a new array with only the fields we want
+            $blogData = $blog->toArray();
+            
+            // Remove the latestModeration relationship
+            if (isset($blogData['latest_moderation'])) {
+                unset($blogData['latest_moderation']);
+            }
+            
+            // Add user details in the required format
+            if (isset($blogData['user']) && isset($blogData['user']['detail'])) {
+                $userDetail = $blogData['user']['detail'];
+                
+                // Replace the user property with just the fields we need
+                $blogData['user'] = [
+                    'id' => $blogData['user']['id'],
+                    'first_name' => $userDetail['first_name'] ?? null,
+                    'last_name' => $userDetail['last_name'] ?? null,
+                    'profile_image_url' => $userDetail['profile_image_path'] ?? null
+                ];
+            }
+            
+            return $blogData;
+        });
 
-        if ($request->has('category')) {
-            $query->whereJsonContains('categories', $request->category);
-        }
-
-        if ($request->has('status')) {
-            $query->where('status', $request->status);
-        }
-
-        return response()->json($query->latest()->get());
+        return response()->json([
+            'message' => 'Blogs filtered successfully',
+            'filters_applied' => [
+                'title' => $title,
+                'author' => $author,
+                'categories' => $categories,
+                'sort_by' => $sortBy
+            ],
+            'count' => $blogs->count(),
+            'blogs' => $transformedBlogs
+        ]);
     }
 
     public function search(Request $request)
@@ -464,5 +544,33 @@ class BlogController extends Controller
             ->get();
             
         return response()->json($pendingBlogs);
+    }
+
+    /**
+     * Apply sorting to the query based on the sort option
+     * 
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param string $sortOption
+     * @return void
+     */    private function applySorting($query, $sortOption)
+    {
+        switch ($sortOption) {
+            case 'likes':
+                $query->orderBy('likes_count', 'desc');
+                break;
+                
+            case 'date':
+                // For date sorting, we'll use created_at instead of joining with blog_moderations
+                $query->orderBy('blogs.created_at', 'desc');
+                break;
+                
+            case 'views':
+                $query->orderBy('views', 'desc');
+                break;
+                
+            default:
+                $query->latest('blogs.created_at');
+                break;
+        }
     }
 }

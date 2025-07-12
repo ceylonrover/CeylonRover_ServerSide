@@ -28,21 +28,18 @@ use App\Http\Controllers\TravsnapModerationController;
     Route::post('/email/verify/send-otp', [App\Http\Controllers\EmailVerificationController::class, 'sendOTP']);
     Route::post('/email/verify/verify-otp', [App\Http\Controllers\EmailVerificationController::class, 'verifyOTP']);
     Route::post('/email/verify/resend-otp', [App\Http\Controllers\EmailVerificationController::class, 'resendOTP']);
-    
-    Route::get('/blogs', [BlogController::class, 'getAllPosts']); // View Blogs (Public)
+      Route::get('/blogs', [BlogController::class, 'getAllPosts']); // View Blogs (Public)
     Route::get('/blogs/{id}', [BlogController::class, 'show']); // View Single Blog (Public)
     Route::get('/travsnaps', [TravsnapController::class, 'getAllTravsnaps']); // View Travsnaps (Public)
     Route::get('/travsnaps/{id}', [TravsnapController::class, 'getById']); // View Single Travsnap (Public)
     Route::get('/travsnaps/featured', [TravsnapController::class, 'getFeatured']); // View Featured Travsnaps (Public)
-    Route::get('/blogs/filter', [BlogController::class, 'filter']); //Filter Blogs (Public)
+    Route::post('/blogs/filter', [BlogController::class, 'filter']); //Filter Blogs (Public) - POST to allow body parameters
 
-     Route::middleware('auth:sanctum')->group(function () {
-         Route::post('/blogs', [BlogController::class, 'store']); // Create Blog
+     Route::middleware('auth:sanctum')->group(function () {        Route::post('/blogs', [BlogController::class, 'store']); // Create Blog
         Route::put('/blogs/{id}', [BlogController::class, 'update']); // Update Blog
         Route::get('/user', [AuthController::class, 'user']); // Get Logged-in User        Route::get('/email/verify/status', [AuthController::class, 'checkEmailVerification']); // Check email verification status
         Route::post('/email/verify', [AuthController::class, 'verifyEmail']); // Verify email with OTP (authenticated users)
         Route::post('/logout', [AuthController::class, 'logout']); // Logout User
-        Route::get('/blogs/filter', [BlogController::class, 'filter']);//Filter by 
         Route::get('/blogs/search', [BlogController::class, 'search']);//Common Search
         Route::put('/user/profile', [AuthController::class, 'updateProfile']);//update User profile
           // New profile endpoints

@@ -31,11 +31,12 @@ use App\Http\Controllers\TravsnapModerationController;
     Route::get('/blogs/{id}', [BlogController::class, 'show']); // View Single Blog (Public)
     Route::get('/travsnaps', [TravsnapController::class, 'getAllTravsnaps']); // View Travsnaps (Public)
     Route::get('/travsnaps/{id}', [TravsnapController::class, 'getById']); // View Single Travsnap (Public)
-    Route::get('/travsnaps/featured', [TravsnapController::class, 'getFeatured']); // View Featured Travsnaps (Public)
-    Route::post('/blogs/filter', [BlogController::class, 'filter']); //Filter Blogs (Public) - POST to allow body parameters
+    Route::get('/travsnaps/featured', [TravsnapController::class, 'getFeatured']); // View Featured Travsnaps (Public)    Route::post('/blogs/filter', [BlogController::class, 'filter']); //Filter Blogs (Public) - POST to allow body parameters
+    Route::post('/travsnaps/filter', [TravsnapController::class, 'filter']); //Filter Travsnaps (Public) - POST to allow body parameters
     Route::get('/blogs/debug/location-samples', [BlogController::class, 'getLocationSamples']); // Debug endpoint for location data
-
-     Route::middleware('auth:sanctum')->group(function () {        Route::post('/blogs', [BlogController::class, 'store']); // Create Blog
+    Route::post('/blogs/filter', [BlogController::class, 'filter']); //Filter Blogs (Public) - POST to allow body parameters
+     
+    Route::middleware('auth:sanctum')->group(function () {        Route::post('/blogs', [BlogController::class, 'store']); // Create Blog
         Route::put('/blogs/{id}', [BlogController::class, 'update']); // Update Blog
         Route::get('/user', [AuthController::class, 'user']); // Get Logged-in User        Route::get('/email/verify/status', [AuthController::class, 'checkEmailVerification']); // Check email verification status
         Route::post('/email/verify', [AuthController::class, 'verifyEmail']); // Verify email with OTP (authenticated users)

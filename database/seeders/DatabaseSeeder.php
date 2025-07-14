@@ -18,11 +18,11 @@ class DatabaseSeeder extends Seeder
         User::factory()->create([
             'name' => 'Test User',
             'email' => 'test@example.com',
-        ]);
-          // Run blog seeder
+        ]);          // Run blog seeder
         $this->call([
             BlogSeeder::class,
             SampleBlogSeeder::class,
+            TravsnapSeeder::class,
         ]);
     }
 }

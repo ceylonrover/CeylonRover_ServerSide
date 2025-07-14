@@ -19,15 +19,34 @@ class TravsnapController extends Controller
     {
         Log::info('TravsnapController@getAllTravsnaps method called');
         
-        try {
-            $travsnaps = Travsnap::where('status', 'approved')
+        try {            $travsnaps = Travsnap::where('status', 'approved')
                 ->where('is_active', true)
-                ->with('user:id,name,email,profile_photo')
+                ->with('user.detail')
                 ->get();
+
+            // Transform travsnaps to include user details
+            $transformedTravsnaps = $travsnaps->map(function($travsnap) {
+                $data = $travsnap->toArray();
+                
+                // Add user details in the proper format
+                if (isset($data['user']) && isset($data['user']['detail'])) {
+                    $userDetail = $data['user']['detail'];
+                    $data['user'] = [
+                        'id' => $data['user']['id'],
+                        'name' => $data['user']['name'] ?? null,
+                        'email' => $data['user']['email'] ?? null,
+                        'first_name' => $userDetail['first_name'] ?? null,
+                        'last_name' => $userDetail['last_name'] ?? null,
+                        'profile_image_url' => $userDetail['profile_image_path'] ?? null
+                    ];
+                }
+                
+                return $data;
+            });
 
             return response()->json([
                 'message' => 'Travsnaps retrieved successfully', 
-                'travsnaps' => $travsnaps
+                'travsnaps' => $transformedTravsnaps
             ], 200);
         } catch (\Exception $e) {
             Log::error('Error in TravsnapController@getAllTravsnaps', [
@@ -517,5 +536,204 @@ class TravsnapController extends Controller
         Storage::disk('public')->put($filename, $imageData);
 
         return 'storage/' . $filename;
+    }
+
+    /**
+     * Filter travsnaps based on various criteria
+     * 
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function filter(Request $request)
+    {
+        Log::info('TravsnapController@filter method called');
+        
+        try {
+            // Start with base query and immediately filter for approved travsnaps only
+            $query = Travsnap::query()->where('status', 'approved')->where('is_active', true);
+
+            // Get filter parameters from request body
+            $title = $request->input('title');
+            $location = $request->input('location');
+            $userId = $request->input('user_id');
+            $sortBy = $request->input('sort_by');
+            
+            // Log the filter parameters for debugging
+            Log::info('Travsnap filter parameters', [
+                'title' => $title,
+                'location' => $location,
+                'user_id' => $userId,
+                'sort_by' => $sortBy,
+            ]);
+            
+            // Apply title filter
+            if ($title) {
+                $query->where('title', 'like', '%' . $title . '%');
+            }
+            
+            // Apply user filter
+            if ($userId) {
+                $query->where('user_id', $userId);
+            }
+            
+            // Apply location filter - ROBUST VERSION
+            if ($location && is_array($location)) {
+                // Get all travsnaps first, then filter in PHP (for complex JSON handling)
+                $tempQuery = clone $query;
+                $allTravsnaps = $tempQuery->get();
+                
+                $filteredTravsnapIds = [];
+                
+                foreach ($allTravsnaps as $travsnap) {
+                    try {
+                        // Location is already cast as array in the model
+                        $travsnapLocation = $travsnap->location;
+                        
+                        if (!$travsnapLocation) {
+                            continue; // Skip if location is empty
+                        }
+                        
+                        $matches = true;
+                        
+                        // Check each location criteria
+                        foreach ($location as $key => $value) {
+                            if (!empty($value) && (!isset($travsnapLocation[$key]) || $travsnapLocation[$key] !== $value)) {
+                                $matches = false;
+                                break;
+                            }
+                        }
+                        
+                        if ($matches) {
+                            $filteredTravsnapIds[] = $travsnap->id;
+                        }
+                        
+                    } catch (\Exception $e) {
+                        // Log error and skip this travsnap
+                        Log::warning('Error parsing travsnap location data', [
+                            'travsnap_id' => $travsnap->id,
+                            'location' => $travsnap->location,
+                            'error' => $e->getMessage()
+                        ]);
+                        continue;
+                    }
+                }
+                
+                // Apply the filtered IDs to the query
+                if (!empty($filteredTravsnapIds)) {
+                    $query->whereIn('id', $filteredTravsnapIds);
+                } else {
+                    // No matches found, return empty result
+                    $query->whereRaw('1 = 0'); // This will return no results
+                }
+                
+                Log::info('Location filter applied via PHP', [
+                    'location' => $location,
+                    'filtered_travsnap_ids' => $filteredTravsnapIds,
+                    'count' => count($filteredTravsnapIds)
+                ]);            }
+            
+            // Eager load the user relationship with user details
+            $query->with(['user.detail']);
+            
+            // Handle sorting options
+            if ($sortBy) {
+                // If sort_by is an array, handle multiple sorting criteria
+                if (is_array($sortBy)) {
+                    foreach ($sortBy as $sortOption) {
+                        $this->applySorting($query, $sortOption);
+                    }
+                } else {
+                    // Single sorting criterion
+                    $this->applySorting($query, $sortBy);
+                }
+            } else {
+                // Default ordering
+                $query->latest();
+            }
+            
+            // Get the filtered travsnaps
+            $travsnaps = $query->get();
+            
+            // Log the final result
+            Log::info('Travsnap filter result', [
+                'count' => $travsnaps->count(),
+                'sql' => $query->toSql(),
+                'bindings' => $query->getBindings()
+            ]);
+            
+            // Transform the travsnaps to include user info and exclude moderation details
+            $transformedTravsnaps = $travsnaps->map(function($travsnap) {
+                // Create a new array with only the fields we want
+                $travsnapData = $travsnap->toArray();
+                
+                // Remove the moderation related data if present
+                if (isset($travsnapData['active_moderation'])) {
+                    unset($travsnapData['active_moderation']);
+                }
+                  // Add user details in the required format
+                if (isset($travsnapData['user'])) {
+                    $userData = $travsnapData['user'];
+                    $userDetail = $userData['detail'] ?? null;
+                    
+                    // Replace the user property with just the fields we need
+                    $travsnapData['user'] = [
+                        'id' => $userData['id'],
+                        'name' => $userData['name'] ?? null,
+                        'email' => $userData['email'] ?? null,
+                        'first_name' => $userDetail['first_name'] ?? null,
+                        'last_name' => $userDetail['last_name'] ?? null,
+                        'profile_image_url' => $userDetail['profile_image_path'] ?? null
+                    ];
+                }
+                
+                return $travsnapData;
+            });
+            
+            return response()->json([
+                'message' => 'Travsnaps filtered successfully',
+                'filters_applied' => [
+                    'title' => $title,
+                    'location' => $location,
+                    'user_id' => $userId,
+                    'sort_by' => $sortBy
+                ],
+                'count' => $travsnaps->count(),
+                'travsnaps' => $transformedTravsnaps
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error in TravsnapController@filter', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json(['message' => 'An error occurred', 'error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Apply sorting to the query based on the sort option
+     * 
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param string $sortOption
+     * @return void
+     */
+    private function applySorting($query, $sortOption)
+    {
+        switch ($sortOption) {
+            case 'date':
+                $query->orderBy('created_at', 'desc');
+                break;
+                
+            case 'title':
+                $query->orderBy('title', 'asc');
+                break;
+                
+            case 'featured':
+                $query->orderBy('is_featured', 'desc')->orderBy('created_at', 'desc');
+                break;
+                
+            default:
+                $query->latest();
+                break;
+        }
     }
 }

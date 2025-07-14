@@ -12,7 +12,8 @@ class BlogHighlightController extends Controller
         $validated = $request->validate([
             'blog_id' => 'required|exists:blogs,id',
             'category' => 'required|string|max:50',
-            'is_active' => 'boolean'
+            'is_active' => 'boolean',
+            'is_blog' => 'boolean'
         ]);
 
         $highlight = BlogHighlight::updateOrCreate(

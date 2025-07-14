@@ -27,13 +27,13 @@ use App\Http\Controllers\TravsnapModerationController;
     // Email Verification Routes (public)
     Route::post('/email/verify/send-otp', [App\Http\Controllers\EmailVerificationController::class, 'sendOTP']);
     Route::post('/email/verify/verify-otp', [App\Http\Controllers\EmailVerificationController::class, 'verifyOTP']);
-    Route::post('/email/verify/resend-otp', [App\Http\Controllers\EmailVerificationController::class, 'resendOTP']);
-      Route::get('/blogs', [BlogController::class, 'getAllPosts']); // View Blogs (Public)
+    Route::post('/email/verify/resend-otp', [App\Http\Controllers\EmailVerificationController::class, 'resendOTP']);    Route::get('/blogs', [BlogController::class, 'getAllPosts']); // View Blogs (Public)
     Route::get('/blogs/{id}', [BlogController::class, 'show']); // View Single Blog (Public)
     Route::get('/travsnaps', [TravsnapController::class, 'getAllTravsnaps']); // View Travsnaps (Public)
     Route::get('/travsnaps/{id}', [TravsnapController::class, 'getById']); // View Single Travsnap (Public)
     Route::get('/travsnaps/featured', [TravsnapController::class, 'getFeatured']); // View Featured Travsnaps (Public)
     Route::post('/blogs/filter', [BlogController::class, 'filter']); //Filter Blogs (Public) - POST to allow body parameters
+    Route::get('/blogs/debug/location-samples', [BlogController::class, 'getLocationSamples']); // Debug endpoint for location data
 
      Route::middleware('auth:sanctum')->group(function () {        Route::post('/blogs', [BlogController::class, 'store']); // Create Blog
         Route::put('/blogs/{id}', [BlogController::class, 'update']); // Update Blog

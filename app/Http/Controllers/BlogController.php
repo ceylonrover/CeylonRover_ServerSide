@@ -283,110 +283,321 @@ class BlogController extends Controller
         }
     } 
     
-    
-    public function filter(Request $request)
-    {
-        // Start with base query and immediately filter for approved blogs only
-        $query = \App\Models\Blog::query()->where('blogs.status', 'approved');
+    //   public function filter(Request $request)
+    // {
+    //     // Start with base query and immediately filter for approved blogs only
+    //     $query = \App\Models\Blog::query()->where('blogs.status', 'approved');
 
-        // Get filter parameters from request body
-        $title = $request->input('title');
-        $author = $request->input('author');
-        $categories = $request->input('categories');
-        $sortBy = $request->input('sort_by');
+    //     // Get filter parameters from request body
+    //     $title = $request->input('title');
+    //     $author = $request->input('author');
+    //     $categories = $request->input('categories');
+    //     $sortBy = $request->input('sort_by');
+    //     $location = $request->input('location'); // Add location parameter
         
-        // Log the filter parameters for debugging
-        \Illuminate\Support\Facades\Log::info('Blog filter parameters', [
+    //     // Log the filter parameters for debugging
+    //     \Illuminate\Support\Facades\Log::info('Blog filter parameters', [
+    //         'title' => $title,
+    //         'author' => $author,
+    //         'categories' => $categories,
+    //         'sort_by' => $sortBy,
+    //         'location' => $location, // Log location parameter
+    //     ]);
+        
+    //     // Apply title filter
+    //     if ($title) {
+    //         $query->where('title', 'like', '%' . $title . '%');
+    //     }        // Apply author filter
+    //     if ($author) {
+    //         $query->where('author', 'like', '%' . $author . '%');
+    //     }        
+        
+    //     // Apply categories filter (handle multiple categories)
+    //     if ($categories && is_array($categories)) {
+    //         $query->where(function($query) use ($categories) {
+    //             foreach ($categories as $category) {
+    //                 // Handle double-encoded JSON with escaped quotes (\\\\\")
+    //                 $query->orWhere('categories', 'LIKE', '%\\\\\"' . $category . '\\\\\"%');
+    //             }
+    //         });
+    //     }        // Apply location filter (district or province)
+    //     if ($location && is_array($location)) {
+    //         $query->where(function($query) use ($location) {
+    //             // Using multiple approaches for maximum compatibility
+                
+    //             // 1. Using whereJsonContains (Laravel's built-in JSON querying)
+    //             if (isset($location['district'])) {
+    //                 $query->orWhereJsonContains('location->district', $location['district']);
+    //             }
+                
+    //             if (isset($location['province'])) {
+    //                 $query->orWhereJsonContains('location->province', $location['province']);
+    //             }
+                
+    //             // 2. Fallback to raw JSON_CONTAINS function (MySQL/MariaDB)
+    //             if (isset($location['district'])) {
+    //                 $query->orWhereRaw("JSON_CONTAINS(location, '\"" . $location['district'] . "\"', '$.district')");
+    //             }
+                
+    //             if (isset($location['province'])) {
+    //                 $query->orWhereRaw("JSON_CONTAINS(location, '\"" . $location['province'] . "\"', '$.province')");
+    //             }
+                
+    //             // 3. Fallback to LIKE for older MySQL versions or other DB engines
+    //             if (isset($location['district'])) {
+    //                 $query->orWhere('location', 'LIKE', '%"district":"' . $location['district'] . '"%')
+    //                       ->orWhere('location', 'LIKE', '%"district": "' . $location['district'] . '"%');
+    //             }
+                
+    //             if (isset($location['province'])) {
+    //                 $query->orWhere('location', 'LIKE', '%"province":"' . $location['province'] . '"%')
+    //                       ->orWhere('location', 'LIKE', '%"province": "' . $location['province'] . '"%');
+    //             }
+    //         });
+            
+    //         // Log the location filter being applied with query details
+    //         $locationQuery = clone $query;
+    //         \Illuminate\Support\Facades\Log::info('Location filter applied', [
+    //             'location' => $location,
+    //             'sql' => $locationQuery->toSql(),
+    //             'bindings' => $locationQuery->getBindings()
+    //         ]);
+    //     }
+            
+    //     // Join with the blog_user_bookmarks table to count bookmarks (likes)
+    //     $query->withCount('bookmarkedBy as likes_count');
+    //       // Eager load the user relationship with specific fields and the user's details
+    //     $query->with(['user.detail']);
+        
+    //     // Handle sorting options
+    //     if ($sortBy) {
+    //         // If sort_by is an array, handle multiple sorting criteria
+    //         if (is_array($sortBy)) {
+    //             foreach ($sortBy as $sortOption) {
+    //                 $this->applySorting($query, $sortOption);
+    //             }
+    //         } else {
+    //             // Single sorting criterion
+    //             $this->applySorting($query, $sortBy);
+    //         }
+    //     } else {
+    //         // Default ordering
+    //         $query->latest();
+    //     }        // Get the filtered blogs
+    //     $blogs = $query->get();
+        
+    //     // Log the SQL query that was executed (for debugging)
+    //     \Illuminate\Support\Facades\Log::info('Blog filter SQL', [
+    //         'sql' => $query->toSql(),
+    //         'bindings' => $query->getBindings(),
+    //         'count' => $blogs->count()
+    //     ]);
+    //       // Transform the blogs to include user info and exclude latestModeration
+    //     $transformedBlogs = $blogs->map(function($blog) {
+    //         // Create a new array with only the fields we want
+    //         $blogData = $blog->toArray();
+            
+    //         // Remove the latestModeration relationship
+    //         if (isset($blogData['latest_moderation'])) {
+    //             unset($blogData['latest_moderation']);
+    //         }
+            
+    //         // Add user details in the required format
+    //         if (isset($blogData['user']) && isset($blogData['user']['detail'])) {
+    //             $userDetail = $blogData['user']['detail'];
+                
+    //             // Replace the user property with just the fields we need
+    //             $blogData['user'] = [
+    //                 'id' => $blogData['user']['id'],
+    //                 'first_name' => $userDetail['first_name'] ?? null,
+    //                 'last_name' => $userDetail['last_name'] ?? null,
+    //                 'profile_image_url' => $userDetail['profile_image_path'] ?? null
+    //             ];
+    //         }
+            
+    //         return $blogData;
+    //     });        return response()->json([
+    //         'message' => 'Blogs filtered successfully',
+    //         'filters_applied' => [
+    //             'title' => $title,
+    //             'author' => $author,
+    //             'categories' => $categories,
+    //             'location' => $location,
+    //             'sort_by' => $sortBy
+    //         ],
+    //         'count' => $blogs->count(),
+    //         'blogs' => $transformedBlogs
+    //     ]);
+    // }
+public function filter(Request $request)
+{
+    // Start with base query and immediately filter for approved blogs only
+    $query = \App\Models\Blog::query()->where('blogs.status', 'approved');
+
+    // Get filter parameters from request body
+    $title = $request->input('title');
+    $author = $request->input('author');
+    $categories = $request->input('categories');
+    $sortBy = $request->input('sort_by');
+    $location = $request->input('location');
+    
+    // Log the filter parameters for debugging
+    \Illuminate\Support\Facades\Log::info('Blog filter parameters', [
+        'title' => $title,
+        'author' => $author,
+        'categories' => $categories,
+        'sort_by' => $sortBy,
+        'location' => $location,
+    ]);
+    
+    // Apply title filter
+    if ($title) {
+        $query->where('title', 'like', '%' . $title . '%');
+    }
+    
+    // Apply author filter
+    if ($author) {
+        $query->where('author', 'like', '%' . $author . '%');
+    }
+    
+    // Apply categories filter (handle multiple categories)
+    if ($categories && is_array($categories)) {
+        $query->where(function($query) use ($categories) {
+            foreach ($categories as $category) {
+                // Handle double-encoded JSON with escaped quotes (\\\\\")
+                $query->orWhere('categories', 'LIKE', '%\\\\\"' . $category . '\\\\\"%');
+            }
+        });
+    }
+    
+    // Apply location filter - ALTERNATIVE ROBUST VERSION
+    if ($location && is_array($location)) {
+        // Get all blogs first, then filter in PHP (for complex JSON handling)
+        $tempQuery = clone $query;
+        $allBlogs = $tempQuery->get();
+        
+        $filteredBlogIds = [];
+        
+        foreach ($allBlogs as $blog) {
+            try {
+                // Decode the JSON location string
+                $blogLocation = json_decode($blog->location, true);
+                
+                if (!$blogLocation) {
+                    continue; // Skip if JSON is invalid
+                }
+                
+                $matches = true;
+                
+                // Check each location criteria
+                foreach ($location as $key => $value) {
+                    if (!empty($value) && (!isset($blogLocation[$key]) || $blogLocation[$key] !== $value)) {
+                        $matches = false;
+                        break;
+                    }
+                }
+                
+                if ($matches) {
+                    $filteredBlogIds[] = $blog->id;
+                }
+                
+            } catch (\Exception $e) {
+                // Log error and skip this blog
+                \Illuminate\Support\Facades\Log::warning('Error parsing blog location JSON', [
+                    'blog_id' => $blog->id,
+                    'location' => $blog->location,
+                    'error' => $e->getMessage()
+                ]);
+                continue;
+            }
+        }
+        
+        // Apply the filtered IDs to the query
+        if (!empty($filteredBlogIds)) {
+            $query->whereIn('id', $filteredBlogIds);
+        } else {
+            // No matches found, return empty result
+            $query->whereRaw('1 = 0'); // This will return no results
+        }
+        
+        \Illuminate\Support\Facades\Log::info('Location filter applied via PHP', [
+            'location' => $location,
+            'filtered_blog_ids' => $filteredBlogIds,
+            'count' => count($filteredBlogIds)
+        ]);
+    }
+    
+    // Join with the blog_user_bookmarks table to count bookmarks (likes)
+    $query->withCount('bookmarkedBy as likes_count');
+    
+    // Eager load the user relationship with specific fields and the user's details
+    $query->with(['user.detail']);
+    
+    // Handle sorting options
+    if ($sortBy) {
+        // If sort_by is an array, handle multiple sorting criteria
+        if (is_array($sortBy)) {
+            foreach ($sortBy as $sortOption) {
+                $this->applySorting($query, $sortOption);
+            }
+        } else {
+            // Single sorting criterion
+            $this->applySorting($query, $sortBy);
+        }
+    } else {
+        // Default ordering
+        $query->latest();
+    }
+    
+    // Get the filtered blogs
+    $blogs = $query->get();
+    
+    // Log the final result
+    \Illuminate\Support\Facades\Log::info('Blog filter result', [
+        'count' => $blogs->count(),
+        'sql' => $query->toSql(),
+        'bindings' => $query->getBindings()
+    ]);
+    
+    // Transform the blogs to include user info and exclude latestModeration
+    $transformedBlogs = $blogs->map(function($blog) {
+        // Create a new array with only the fields we want
+        $blogData = $blog->toArray();
+        
+        // Remove the latestModeration relationship
+        if (isset($blogData['latest_moderation'])) {
+            unset($blogData['latest_moderation']);
+        }
+        
+        // Add user details in the required format
+        if (isset($blogData['user']) && isset($blogData['user']['detail'])) {
+            $userDetail = $blogData['user']['detail'];
+            
+            // Replace the user property with just the fields we need
+            $blogData['user'] = [
+                'id' => $blogData['user']['id'],
+                'first_name' => $userDetail['first_name'] ?? null,
+                'last_name' => $userDetail['last_name'] ?? null,
+                'profile_image_url' => $userDetail['profile_image_path'] ?? null
+            ];
+        }
+        
+        return $blogData;
+    });
+    
+    return response()->json([
+        'message' => 'Blogs filtered successfully',
+        'filters_applied' => [
             'title' => $title,
             'author' => $author,
             'categories' => $categories,
-            'sort_by' => $sortBy,
-        ]);
-        
-        // Apply title filter
-        if ($title) {
-            $query->where('title', 'like', '%' . $title . '%');
-        }
-
-        // Apply author filter
-        if ($author) {
-            $query->where('author', 'like', '%' . $author . '%');
-        }        // Apply categories filter (handle multiple categories)
-        if ($categories && is_array($categories)) {
-            $query->where(function($query) use ($categories) {
-                foreach ($categories as $category) {
-                    // Handle double-encoded JSON with escaped quotes (\\\\\")
-                    $query->orWhere('categories', 'LIKE', '%\\\\\"' . $category . '\\\\\"%');
-                }
-            });
-        }
-            // Join with the blog_user_bookmarks table to count bookmarks (likes)
-        $query->withCount('bookmarkedBy as likes_count');
-          // Eager load the user relationship with specific fields and the user's details
-        $query->with(['user.detail']);
-        
-        // Handle sorting options
-        if ($sortBy) {
-            // If sort_by is an array, handle multiple sorting criteria
-            if (is_array($sortBy)) {
-                foreach ($sortBy as $sortOption) {
-                    $this->applySorting($query, $sortOption);
-                }
-            } else {
-                // Single sorting criterion
-                $this->applySorting($query, $sortBy);
-            }
-        } else {
-            // Default ordering
-            $query->latest();
-        }        // Get the filtered blogs
-        $blogs = $query->get();
-        
-        // Log the SQL query that was executed (for debugging)
-        \Illuminate\Support\Facades\Log::info('Blog filter SQL', [
-            'sql' => $query->toSql(),
-            'bindings' => $query->getBindings(),
-            'count' => $blogs->count()
-        ]);
-          // Transform the blogs to include user info and exclude latestModeration
-        $transformedBlogs = $blogs->map(function($blog) {
-            // Create a new array with only the fields we want
-            $blogData = $blog->toArray();
-            
-            // Remove the latestModeration relationship
-            if (isset($blogData['latest_moderation'])) {
-                unset($blogData['latest_moderation']);
-            }
-            
-            // Add user details in the required format
-            if (isset($blogData['user']) && isset($blogData['user']['detail'])) {
-                $userDetail = $blogData['user']['detail'];
-                
-                // Replace the user property with just the fields we need
-                $blogData['user'] = [
-                    'id' => $blogData['user']['id'],
-                    'first_name' => $userDetail['first_name'] ?? null,
-                    'last_name' => $userDetail['last_name'] ?? null,
-                    'profile_image_url' => $userDetail['profile_image_path'] ?? null
-                ];
-            }
-            
-            return $blogData;
-        });
-
-        return response()->json([
-            'message' => 'Blogs filtered successfully',
-            'filters_applied' => [
-                'title' => $title,
-                'author' => $author,
-                'categories' => $categories,
-                'sort_by' => $sortBy
-            ],
-            'count' => $blogs->count(),
-            'blogs' => $transformedBlogs
-        ]);
-    }
-
+            'location' => $location,
+            'sort_by' => $sortBy
+        ],
+        'count' => $blogs->count(),
+        'blogs' => $transformedBlogs
+    ]);
+}
     public function search(Request $request)
     {
         $search = $request->input('q');
@@ -544,15 +755,14 @@ class BlogController extends Controller
             ->get();
             
         return response()->json($pendingBlogs);
-    }
-
-    /**
+    }    /**
      * Apply sorting to the query based on the sort option
      * 
      * @param \Illuminate\Database\Eloquent\Builder $query
      * @param string $sortOption
      * @return void
-     */    private function applySorting($query, $sortOption)
+     */    
+    private function applySorting($query, $sortOption)
     {
         switch ($sortOption) {
             case 'likes':
@@ -571,6 +781,48 @@ class BlogController extends Controller
             default:
                 $query->latest('blogs.created_at');
                 break;
+        }
+    }
+    
+    /**
+     * Get sample data from the database to understand location structure
+     * This is a development/debug endpoint only
+     * 
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getLocationSamples(Request $request)
+    {
+        try {
+            // Get a few blogs with non-empty location data
+            $blogsWithLocation = Blog::whereNotNull('location')
+                ->where('location', '<>', '[]')
+                ->where('location', '<>', '{}')
+                ->where('location', '<>', 'null')
+                ->limit(10)
+                ->get(['id', 'title', 'location']);
+            
+            // Get the raw location data for analysis
+            $locationSamples = $blogsWithLocation->map(function($blog) {
+                return [
+                    'id' => $blog->id,
+                    'title' => $blog->title,
+                    'location_raw' => $blog->getRawOriginal('location'),
+                    'location_parsed' => $blog->location
+                ];
+            });
+            
+            return response()->json([
+                'message' => 'Location samples retrieved',
+                'samples' => $locationSamples,
+                'count' => $locationSamples->count()
+            ]);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Error in BlogController@getLocationSamples', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json(['message' => 'An error occurred', 'error' => $e->getMessage()], 500);
         }
     }
 }

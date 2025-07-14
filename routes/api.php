@@ -85,6 +85,11 @@ use App\Http\Controllers\TravsnapModerationController;
             
             // Feature toggle for travsnaps
             Route::post('/travsnaps/{id}/feature', [TravsnapController::class, 'toggleFeatured']); // Toggle Featured (Admin)
+
+            //Trending posts [post Highlights]
+            Route::get('/highlights', [BlogHighlightController::class, 'index']);
+            Route::post('/highlights', [BlogHighlightController::class, 'storeOrUpdate']);
+            Route::delete('/highlights/{id}', [BlogHighlightController::class, 'destroy']);
         
         });
         

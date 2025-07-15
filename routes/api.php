@@ -6,10 +6,12 @@ use App\Http\Controllers\BlogController;
 use App\Http\Controllers\AuthController; 
 use App\Http\Controllers\AdminAuthController;
 use App\Http\Controllers\BookmarkController; 
+use App\Http\Controllers\LikeController;
 use App\Http\Controllers\TravsnapController;
 use App\Http\Controllers\ModeratorAssignmentController;
 use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\BlogModerationController;
+use App\Http\Controllers\BlogHighlightController;
 use App\Http\Controllers\TravsnapModerationController;
 /*
 |--------------------------------------------------------------------------

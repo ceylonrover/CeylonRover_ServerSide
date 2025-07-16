@@ -38,7 +38,8 @@ use App\Http\Controllers\TravsnapModerationController;
     Route::get('/blogs/debug/location-samples', [BlogController::class, 'getLocationSamples']); // Debug endpoint for location data
     Route::post('/blogs/filter', [BlogController::class, 'filter']); //Filter Blogs (Public) - POST to allow body parameters
      
-    Route::middleware('auth:sanctum')->group(function () {        Route::post('/blogs', [BlogController::class, 'store']); // Create Blog
+    Route::middleware(['auth:sanctum', 'check.token.expiry'])->group(function () {        
+        Route::post('/blogs', [BlogController::class, 'store']); // Create Blog
         Route::put('/blogs/{id}', [BlogController::class, 'update']); // Update Blog
         Route::get('/user', [AuthController::class, 'user']); // Get Logged-in User        Route::get('/email/verify/status', [AuthController::class, 'checkEmailVerification']); // Check email verification status
         Route::post('/email/verify', [AuthController::class, 'verifyEmail']); // Verify email with OTP (authenticated users)

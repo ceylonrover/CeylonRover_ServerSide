@@ -16,30 +16,7 @@ class BlogController extends Controller
         Log::info('BlogController@store method called', ['ip' => $request->ip()]);
 
         try {
-            $validated = $request->validate([
-                'title' => 'required|string|max:255',
-                'description' => 'required|string',
-                'content' => 'required|string',
-                'user_id' => 'required|integer|exists:users,id',
-                'categories' => 'required|array|min:1',
-                'location' => 'nullable|array',
-                'image' => 'nullable|string',
-                'gallery' => 'nullable|array',
-                'operatingHours' => 'nullable|string',
-                'entryFee' => 'nullable|string',
-                'suitableFor' => 'nullable|array',
-                'specialty' => 'nullable|string',
-                'closedDates' => 'nullable|string',
-                'routeDetails' => 'nullable|string',
-                'safetyMeasures' => 'nullable|string',
-                'restrictions' => 'nullable|string',
-                'climate' => 'nullable|string',
-                'travelAdvice' => 'nullable|string',
-                'emergencyContacts' => 'nullable|string',
-                'assistance' => 'nullable|string',
-                'type' => 'nullable|string',
-                'views' => 'nullable|integer',
-            ]);
+            $validated = $request->all();
 
             // Generate a unique slug
             $baseSlug = Str::slug($validated['title']);

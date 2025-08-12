@@ -12,13 +12,21 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('blogs', function (Blueprint $table) {
+            // Drop the foreign key constraint if it exists
+            if (Schema::hasTable('blogs') && Schema::hasColumn('blogs', 'user_id')) {
+                $table->dropForeign(['user_id']); // Drop foreign key constraint
+            }
+
             // Rename author to user_id if needed
             if (Schema::hasColumn('blogs', 'author')) {
                 $table->renameColumn('author', 'user_id');
             }
 
-            // Ensure user_id is a string (if you're using UUIDs) or change to unsignedBigInteger for integer IDs
+            // Modify user_id to string and nullable
             $table->string('user_id')->nullable()->change();
+
+            // Re-add the foreign key constraint (if still needed)
+            $table->foreign('user_id')->references('id')->on('users')->onDelete('set null');
 
             // Add new fields
             $table->text('operating_hours')->nullable();
@@ -36,7 +44,6 @@ return new class extends Migration
             $table->string('type')->default('General');
             $table->unsignedBigInteger('views')->default(0);
         });
-
     }
 
     /**
@@ -44,9 +51,19 @@ return new class extends Migration
      */
     public function down(): void
     {
-        
         Schema::table('blogs', function (Blueprint $table) {
-            // Optional: revert changes if needed
+            // Drop the foreign key constraint
+            if (Schema::hasTable('blogs') && Schema::hasColumn('blogs', 'user_id')) {
+                $table->dropForeign(['user_id']);
+            }
+
+            // Revert user_id to its original type (adjust as needed, e.g., unsignedBigInteger)
+            $table->unsignedBigInteger('user_id')->nullable()->change();
+
+            // Re-add the foreign key constraint
+            $table->foreign('user_id')->references('id')->on('users')->onDelete('set null');
+
+            // Drop the added columns
             $table->dropColumn([
                 'operating_hours',
                 'entry_fee',
@@ -63,6 +80,11 @@ return new class extends Migration
                 'type',
                 'views'
             ]);
+
+            // Rename user_id back to author if needed
+            if (Schema::hasColumn('blogs', 'user_id')) {
+                $table->renameColumn('user_id', 'author');
+            }
         });
     }
 };

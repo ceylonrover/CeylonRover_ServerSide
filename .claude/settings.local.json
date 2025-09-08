@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cat:*)",
+      "Bash(rm:*)",
+      "Bash(curl:*)",
+      "Bash(php artisan config:clear:*)",
+      "Bash(php artisan:*)",
+      "Bash(php artisan view:clear:*)",
+      "Bash(composer:*)",
+      "Bash(php -l:*)"
+    ],
+    "deny": []
+  }
+}

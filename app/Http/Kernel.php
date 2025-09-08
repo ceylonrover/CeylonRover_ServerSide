@@ -68,7 +68,7 @@ class Kernel extends HttpKernel
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
         'admin' => \App\Http\Middleware\AdminAccessMiddleware::class,
         'email.verified' => \App\Http\Middleware\EnsureEmailIsVerified::class,
-        'check.token.expiry' => \App\Http\Middleware\CheckTokenExpiry::class,
+        'check.token.expiry' => \App\Http\Middleware\TokenExpiryMiddleware::class,
     ];
     
     /**

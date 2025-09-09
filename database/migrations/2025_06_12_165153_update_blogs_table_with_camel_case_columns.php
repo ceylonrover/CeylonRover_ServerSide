@@ -60,16 +60,16 @@ return new class extends Migration
                 $table->string('closedDates')->nullable();
             }
             if (!Schema::hasColumn('blogs', 'routeDetails')) {
-                $table->string('routeDetails')->nullable();
+                $table->text('routeDetails')->nullable();
             }
             if (!Schema::hasColumn('blogs', 'safetyMeasures')) {
-                $table->string('safetyMeasures')->nullable();
+                $table->text('safetyMeasures')->nullable();
             }
             if (!Schema::hasColumn('blogs', 'travelAdvice')) {
-                $table->string('travelAdvice')->nullable();
+                $table->text('travelAdvice')->nullable();
             }
             if (!Schema::hasColumn('blogs', 'emergencyContacts')) {
-                $table->string('emergencyContacts')->nullable();
+                $table->text('emergencyContacts')->nullable();
             }
             
             // Make sure user_id column exists

@@ -1,14 +1,25 @@
 <?php
 
 return [
-    'paths' => ['api/*'],
+    'paths' => ['api/*', 'sanctum/csrf-cookie'],
     'allowed_methods' => ['*'],
-    'allowed_origins' => [
-        'http://localhost:3000',
-        'https://localhost:3000', 
+    'allowed_origins' => env('APP_ENV') === 'production' ? [
         env('FRONTEND_URL', 'http://localhost:3000'),
-        '*' // Temporarily allow all origins for testing - remove in production
+        'https://ceylonrover.lk',
+        'https://www.ceylonrover.lk',
+    ] : [
+        'http://localhost:3000',
+        'https://localhost:3000',
+        'http://localhost:3001',
+        'https://localhost:3001',
+        'http://localhost:8000',
+        'http://127.0.0.1:3000',
+        'http://127.0.0.1:8000',
+        'http://ceylonrover_serverside.test',
+        'https://ceylonrover_serverside.test',
+        env('FRONTEND_URL', 'http://localhost:3000'),
     ],
+    'allowed_origins_patterns' => [],
     'allowed_headers' => ['*'],
     'exposed_headers' => [],
     'max_age' => 0,

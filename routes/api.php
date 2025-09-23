@@ -99,7 +99,7 @@ use App\Http\Controllers\TravsnapModerationController;
         
 
         // Travsnap routes (authenticated)        
-        // Route::post('/travsnaps', [TravsnapController::class, 'store']); // Create Travsnap
+        Route::post('/travsnaps', [TravsnapController::class, 'store']); // Create Travsnap
         Route::put('/travsnaps/{id}', [TravsnapController::class, 'update']); // Update Travsnap
         Route::delete('/travsnaps/{id}', [TravsnapController::class, 'destroy']); // Delete Travsnap
         Route::get('/travsnaps/user/{userId}', [TravsnapController::class, 'getUserTravsnaps']); // Get User's Travsnaps

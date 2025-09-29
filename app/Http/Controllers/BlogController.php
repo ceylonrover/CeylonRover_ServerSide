@@ -463,11 +463,10 @@ public function filter(Request $request)
         $blogs = \App\Models\Blog::query()
             ->when($search, function ($query, $search) {
                 $query->where(function ($q) use ($search) {
-                    $q->where('title', 'like', "%$search%")
-                    ->orWhere('description', 'like', "%$search%")
-                    ->orWhere('content', 'like', "%$search%")
-                    ->orWhere('author', 'like', "%$search%")
-                    ->orWhereJsonContains('categories', $search);
+                    $q->where('title', 'like', "%{$search}%")
+                    ->orWhere('description', 'like', "%{$search}%")
+                    ->orWhere('content', 'like', "%{$search}%")
+                    ->orWhere('categories', 'like', "%{$search}%"); 
                 });
             })
             ->latest()
@@ -475,6 +474,7 @@ public function filter(Request $request)
 
         return response()->json($blogs);
     }
+
     
     /**
      * Get a specific blog by ID

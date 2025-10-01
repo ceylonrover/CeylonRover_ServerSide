@@ -80,7 +80,7 @@ class BlogController extends Controller
             ]);
 
             // Create folder using blog ID
-            $folderPath = 'blog/' . $blog->id;
+            $folderPath = 'blogs/' . $blog->id;
 
             // Save main image
             $mainImagePath = null;
@@ -212,7 +212,7 @@ class BlogController extends Controller
             $blog = Blog::findOrFail($id);
 
             // Use blog ID for folder path
-            $folder = 'blog/' . $blog->id;
+            $folder = 'blogs/' . $blog->id;
 
             // Main image upload
             if ($request->hasFile('image')) {

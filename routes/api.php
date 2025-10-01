@@ -22,7 +22,9 @@ use App\Http\Controllers\TravsnapModerationController;
 | routes are loaded by the RouteServiceProvider within a group which
 | is assigned the "api" middleware group. Enjoy building your API!
 |
-*/  Route::post('/register', [AuthController::class, 'register']); // Register User
+*/  
+
+    Route::post('/register', [AuthController::class, 'register']); // Register User
     Route::post('/login', [AuthController::class, 'login'])->name("login"); // Login User
     Route::post('/admin/login', [AdminAuthController::class, 'login'])->name("admin.login"); // Admin Login
     
@@ -40,7 +42,7 @@ use App\Http\Controllers\TravsnapModerationController;
     Route::get('/blogs/debug/location-samples', [BlogController::class, 'getLocationSamples']); // Debug endpoint for location data
     Route::post('/blogs/filter', [BlogController::class, 'filter']); //Filter Blogs (Public) - POST to allow body parameters
      
-    Route::middleware(['auth:sanctum', 'check.token.expiry'])->group(function () {        
+    Route::middleware(['auth:sanctum'])->group(function () {        
         Route::post('/blogs', [BlogController::class, 'store']); // Create Blog
         Route::put('/blogs/{id}', [BlogController::class, 'update']); // Update Blog
         Route::get('/user', [AuthController::class, 'user']); // Get Logged-in User        Route::get('/email/verify/status', [AuthController::class, 'checkEmailVerification']); // Check email verification status

@@ -13,12 +13,23 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
+        // Create multiple users first
+        User::factory(20)->create();
 
+        // Create a specific test user
         User::factory()->create([
             'name' => 'Test User',
             'email' => 'test@example.com',
-        ]);          // Run blog seeder
+        ]);
+
+        // Create admin user
+        User::factory()->create([
+            'name' => 'Admin User',
+            'email' => 'admin@ceylonrover.lk',
+            'role' => 'admin',
+        ]);
+
+        // Run blog seeder
         $this->call([
             BlogSeeder::class,
             SampleBlogSeeder::class,

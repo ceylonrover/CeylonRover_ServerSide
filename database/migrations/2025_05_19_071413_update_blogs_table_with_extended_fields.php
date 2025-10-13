@@ -22,27 +22,40 @@ return new class extends Migration
                 $table->renameColumn('author', 'user_id');
             }
 
-            // Modify user_id to string and nullable
-            $table->string('user_id')->nullable()->change();
+            // Modify user_id to unsignedBigInteger and nullable (to match users.id type)
+            $table->unsignedBigInteger('user_id')->nullable()->change();
 
             // Re-add the foreign key constraint (if still needed)
             $table->foreign('user_id')->references('id')->on('users')->onDelete('set null');
 
-            // Add new fields
-            $table->text('operating_hours')->nullable();
-            $table->string('entry_fee')->nullable();
-            $table->json('suitable_for')->nullable();
-            $table->string('specialty')->nullable();
-            $table->string('closed_dates')->nullable();
-            $table->text('route_details')->nullable();
-            $table->text('safety_measures')->nullable();
-            $table->text('restrictions')->nullable();
-            $table->string('climate')->nullable();
-            $table->text('travel_advice')->nullable();
-            $table->string('emergency_contacts')->nullable();
-            $table->text('assistance')->nullable();
-            $table->string('type')->default('General');
-            $table->unsignedBigInteger('views')->default(0);
+            // Only add columns that don't exist in the original blogs table
+            // Most fields already exist in the original migration, so we'll only add truly new ones
+            
+            // Convert existing snake_case columns to match if needed
+            if (Schema::hasColumn('blogs', 'operatingHours') && !Schema::hasColumn('blogs', 'operating_hours')) {
+                $table->renameColumn('operatingHours', 'operating_hours');
+            }
+            if (Schema::hasColumn('blogs', 'entryFee') && !Schema::hasColumn('blogs', 'entry_fee')) {
+                $table->renameColumn('entryFee', 'entry_fee');
+            }
+            if (Schema::hasColumn('blogs', 'suitableFor') && !Schema::hasColumn('blogs', 'suitable_for')) {
+                $table->renameColumn('suitableFor', 'suitable_for');
+            }
+            if (Schema::hasColumn('blogs', 'closedDates') && !Schema::hasColumn('blogs', 'closed_dates')) {
+                $table->renameColumn('closedDates', 'closed_dates');
+            }
+            if (Schema::hasColumn('blogs', 'routeDetails') && !Schema::hasColumn('blogs', 'route_details')) {
+                $table->renameColumn('routeDetails', 'route_details');
+            }
+            if (Schema::hasColumn('blogs', 'safetyMeasures') && !Schema::hasColumn('blogs', 'safety_measures')) {
+                $table->renameColumn('safetyMeasures', 'safety_measures');
+            }
+            if (Schema::hasColumn('blogs', 'travelAdvice') && !Schema::hasColumn('blogs', 'travel_advice')) {
+                $table->renameColumn('travelAdvice', 'travel_advice');
+            }
+            if (Schema::hasColumn('blogs', 'emergencyContacts') && !Schema::hasColumn('blogs', 'emergency_contacts')) {
+                $table->renameColumn('emergencyContacts', 'emergency_contacts');
+            }
         });
     }
 
@@ -57,29 +70,37 @@ return new class extends Migration
                 $table->dropForeign(['user_id']);
             }
 
-            // Revert user_id to its original type (adjust as needed, e.g., unsignedBigInteger)
+            // Revert user_id to its original type (unsignedBigInteger)
             $table->unsignedBigInteger('user_id')->nullable()->change();
 
             // Re-add the foreign key constraint
             $table->foreign('user_id')->references('id')->on('users')->onDelete('set null');
 
-            // Drop the added columns
-            $table->dropColumn([
-                'operating_hours',
-                'entry_fee',
-                'suitable_for',
-                'specialty',
-                'closed_dates',
-                'route_details',
-                'safety_measures',
-                'restrictions',
-                'climate',
-                'travel_advice',
-                'emergency_contacts',
-                'assistance',
-                'type',
-                'views'
-            ]);
+            // Revert column names back to camelCase if they were renamed
+            if (Schema::hasColumn('blogs', 'operating_hours') && !Schema::hasColumn('blogs', 'operatingHours')) {
+                $table->renameColumn('operating_hours', 'operatingHours');
+            }
+            if (Schema::hasColumn('blogs', 'entry_fee') && !Schema::hasColumn('blogs', 'entryFee')) {
+                $table->renameColumn('entry_fee', 'entryFee');
+            }
+            if (Schema::hasColumn('blogs', 'suitable_for') && !Schema::hasColumn('blogs', 'suitableFor')) {
+                $table->renameColumn('suitable_for', 'suitableFor');
+            }
+            if (Schema::hasColumn('blogs', 'closed_dates') && !Schema::hasColumn('blogs', 'closedDates')) {
+                $table->renameColumn('closed_dates', 'closedDates');
+            }
+            if (Schema::hasColumn('blogs', 'route_details') && !Schema::hasColumn('blogs', 'routeDetails')) {
+                $table->renameColumn('route_details', 'routeDetails');
+            }
+            if (Schema::hasColumn('blogs', 'safety_measures') && !Schema::hasColumn('blogs', 'safetyMeasures')) {
+                $table->renameColumn('safety_measures', 'safetyMeasures');
+            }
+            if (Schema::hasColumn('blogs', 'travel_advice') && !Schema::hasColumn('blogs', 'travelAdvice')) {
+                $table->renameColumn('travel_advice', 'travelAdvice');
+            }
+            if (Schema::hasColumn('blogs', 'emergency_contacts') && !Schema::hasColumn('blogs', 'emergencyContacts')) {
+                $table->renameColumn('emergency_contacts', 'emergencyContacts');
+            }
 
             // Rename user_id back to author if needed
             if (Schema::hasColumn('blogs', 'user_id')) {

@@ -30,13 +30,13 @@ return new class extends Migration
             $table->json('suitableFor')->nullable();
             $table->string('specialty')->nullable();
             $table->string('closedDates')->nullable();
-            $table->string('routeDetails')->nullable();
-            $table->string('safetyMeasures')->nullable();
-            $table->string('restrictions')->nullable();
+            $table->text('routeDetails')->nullable();
+            $table->text('safetyMeasures')->nullable();
+            $table->text('restrictions')->nullable();
             $table->string('climate')->nullable();
-            $table->string('travelAdvice')->nullable();
+            $table->text('travelAdvice')->nullable();
             $table->string('emergencyContacts')->nullable();
-            $table->string('assistance')->nullable();
+            $table->text('assistance')->nullable();
             $table->string('type')->default('General');
             $table->integer('views')->default(0);
             $table->enum('status', ['draft', 'published', 'pending', 'approved', 'rejected'])->default('draft');
